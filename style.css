@@ -1,0 +1,209 @@
+/* 基本樣式 */
+body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background-color: #f0f2f5;
+    color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+.container {
+    width: 100%;
+    max-width: 900px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    padding: 20px 30px;
+}
+
+header {
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+}
+
+h1 {
+    color: #1a73e8;
+}
+
+h2, h3 {
+    color: #444;
+}
+
+nav button {
+    padding: 10px 20px;
+    border: 1px solid #1a73e8;
+    background-color: #fff;
+    color: #1a73e8;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 5px;
+    margin: 0 5px;
+    transition: all 0.3s ease;
+}
+
+nav button:hover {
+    background-color: #e8f0fe;
+}
+
+nav button.active {
+    background-color: #1a73e8;
+    color: #fff;
+}
+
+/* 視圖切換 */
+.view {
+    display: none;
+}
+.view.active {
+    display: block;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 麻將牌樣式 */
+.tile-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 50px;
+    padding: 10px;
+    background-color: #e9f5e9;
+    border-radius: 5px;
+    border: 1px solid #c8e6c9;
+    margin-bottom: 15px;
+}
+
+.tile {
+    width: 40px;
+    height: 55px;
+    background-color: #fff;
+    border: 1px solid #999;
+    border-radius: 4px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+    user-select: none;
+    opacity: 0; /* 配合動畫，初始透明 */
+}
+
+.tile:hover {
+    transform: scale(1.08);
+    border-color: #1a73e8;
+}
+
+/* 動畫效果 - 新增牌 */
+@keyframes popIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    80% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* 各種花色的顏色 */
+.tile[data-suit="m"] { color: #d32f2f; } /* 萬 */
+.tile[data-suit="p"] { color: #1976d2; } /* 筒 */
+.tile[data-suit="s"] { color: #388e3c; } /* 索 */
+.tile[data-suit="z"] { color: #512da8; } /* 字 */
+
+/* 控制按鈕 */
+.controls, .trainer-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    justify-content: center;
+}
+
+.controls button, .trainer-controls button, #submit-answer-btn {
+    padding: 12px 25px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    border: none;
+    background-color: #4caf50;
+    color: white;
+    transition: background-color 0.3s ease;
+}
+
+.controls button:hover, .trainer-controls button:hover, #submit-answer-btn:hover {
+    background-color: #45a049;
+}
+
+#clear-btn {
+    background-color: #f44336;
+}
+#clear-btn:hover {
+    background-color: #d32f2f;
+}
+
+/* 結果顯示區域 */
+.result-display {
+    background-color: #f8f9fa;
+    border: 1px dashed #ccc;
+    border-radius: 5px;
+    padding: 15px;
+    margin-top: 20px;
+    min-height: 50px;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: all 0.5s ease-in-out;
+}
+.result-display.show {
+    opacity: 1;
+    max-height: 500px;
+    margin-bottom: 20px;
+}
+
+.result-display p {
+    margin: 5px 0;
+    font-size: 18px;
+}
+.result-display .tile-group {
+    background-color: transparent;
+    border: none;
+    padding-left: 0;
+}
+
+/* --- 新增/更新的樣式 --- */
+/* 牌張選擇區的整體容器 */
+#tile-palette {
+    display: flex;
+    flex-direction: column; /* 讓花色行垂直排列 */
+    gap: 15px; /* 行與行之間的間距 */
+}
+/* 每一行花色的容器 */
+.suit-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px; /* 牌與牌之間的間距 */
+    padding: 8px;
+    background-color: #f7f7f7;
+    border-radius: 5px;
+    border: 1px solid #e0e0e0;
+}
+
+/* 試煉區 */
+#problem-area.hidden, #submit-answer-btn.hidden {
+    display: none;
+}
+#trainer-result .correct {
+    color: #388e3c;
+    font-weight: bold;
+}
+#trainer-result .incorrect {
+    color: #d32f2f;
+    font-weight: bold;
+}

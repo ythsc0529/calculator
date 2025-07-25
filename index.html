@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台灣麻將聽牌計算機</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>台灣麻將聽牌計算機</h1>
+            <nav>
+                <button id="show-calculator" class="active">聽牌/打聽計算機</button>
+                <button id="show-trainer">清一色試煉</button>
+            </nav>
+        </header>
+
+        <main id="calculator" class="view active">
+            <div class="hand-display-area">
+                <h2>你的手牌 (點擊下方牌張來加入)</h2>
+                <div id="my-hand" class="tile-group"></div>
+                <div class="controls">
+                    <button id="calculate-btn">計算</button>
+                    <button id="clear-btn">清空</button>
+                </div>
+            </div>
+            <div id="result-area" class="result-display"></div>
+            <div class="tile-palette-area">
+                <h2>牌張選擇區 (萬、筒、索、字各一行)</h2>
+                <div id="tile-palette">
+                    <div class="suit-group" id="palette-m"></div> <div class="suit-group" id="palette-p"></div> <div class="suit-group" id="palette-s"></div> <div class="suit-group" id="palette-z"></div> </div>
+            </div>
+        </main>
+
+        <main id="trainer" class="view">
+            <div class="trainer-controls">
+                <h2>選擇練習模式</h2>
+                <button id="trainer-da-ting-btn">練習打聽</button>
+                <button id="trainer-ting-pai-btn">練習聽牌</button>
+            </div>
+            <div id="problem-area" class="hidden">
+                <h2>題目：</h2>
+                <div id="problem-hand" class="tile-group"></div>
+                <h3>你的答案是？</h3>
+                <div id="answer-area">
+                    <div id="answer-options" class="tile-group"></div>
+                </div>
+                 <button id="submit-answer-btn" class="hidden">提交答案</button>
+                <div id="trainer-result" class="result-display"></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
