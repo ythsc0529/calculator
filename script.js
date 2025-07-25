@@ -189,12 +189,12 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             const len = myHand.length;
             if (len < 1 || len > 17 || len % 3 === 0) {
-                 renderResult('牌數不正確 (應為1, 2, 4, 5...張)，請重新輸入。');
+                 renderResult('您已相公');
                 return;
             }
             const counts = myHand.reduce((acc, t) => { acc[t] = (acc[t] || 0) + 1; return acc; }, {});
             if (Object.values(counts).some(c => c > 4)) {
-                renderResult('已相公 (單張牌超過4張)。');
+                renderResult('詐賭!同張牌不得超過四張。');
                 return;
             }
             if (len % 3 === 1) {
