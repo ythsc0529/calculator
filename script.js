@@ -399,9 +399,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function startGame() {
         const p1Name = document.getElementById('player1-name').value || '東家';
-        const p2Name = document.getElementById('player2-name').value || '南家';
+        const p2Name = document.getElementById('player2-name').value || '北家';
         const p3Name = document.getElementById('player3-name').value || '西家';
-        const p4Name = document.getElementById('player4-name').value || '北家';
+        const p4Name = document.getElementById('player4-name').value || '南家';
 
         players = [
             { id: 1, name: p1Name, score: 0, emoji: getRandomEmoji() },
