@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- 全域變數和狀態 ---
+    // 全局狀態
     let myHand = [];
     let trainerProblem = { hand: [], type: '', answer: {} };
     let currentTrainerMode = 'daTing';
@@ -9,9 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const EMOJIS = ['😀', '😎', '😴', '🥳', '🤯', '😱', '🤔', '🤠', '👽', '👻', '🦊', '🐶'];
 
-    // --- 資料定義 (圖片映射) ---
-    // ★★★ 請確保您的 SVG 檔名與這裡生成的完全一致 ★★★
-    // 例如： 1m -> '一萬.svg', 1s -> '一索.svg', 5z -> '中.svg'
+    // 資料定義 (圖片映射)
     const TILE_TYPES = {
         'm': { name: '萬', count: 9, prefix: ['一', '二', '三', '四', '五', '六', '七', '八', '九'] },
         'p': { name: '筒', count: 9, prefix: ['一', '二', '三', '四', '五', '六', '七', '八', '九'] },
@@ -36,13 +34,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- DOM 元素獲取 ---
-    const calculatorView = document.getElementById('calculator');
-    const trainerView = document.getElementById('trainer');
-    const counterView = document.getElementById('counter');
-    const showCalculatorBtn = document.getElementById('show-calculator');
-    const showTrainerBtn = document.getElementById('show-trainer');
-    const showCounterBtn = document.getElementById('show-counter');
+    // DOM 元素獲取
+    const views = {
+        calculator: document.getElementById('calculator'),
+        trainer: document.getElementById('trainer'),
+        counter: document.getElementById('counter'),
+    };
+    const navButtons = {
+        calculator: document.getElementById('show-calculator'),
+        trainer: document.getElementById('show-trainer'),
+        counter: document.getElementById('show-counter'),
+    };
     const myHandDiv = document.getElementById('my-hand');
     const resultArea = document.getElementById('result-area');
     const calculateBtn = document.getElementById('calculate-btn');
@@ -78,12 +80,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const settleDetails = document.getElementById('settle-details');
     const settleCloseBtn = document.getElementById('settle-close-btn');
 
-    const resetAllModals = () => {
-        scoringModal.classList.add('hidden');
-        settleModal.classList.add('hidden');
-    };
-    resetAllModals();
+    // ★★★ 終極防護：用 style.display 控制顯示/隱藏的函式 ★★★
+    const showElement = (el, displayMode = 'block') => { if (el) el.style.display = displayMode; };
+    const hideElement = (el) => { if (el) el.style.display = 'none'; };
 
+    // 麻將演算法... (此處省略以保持可讀性，實際貼上時請用完整程式碼)
     const sortTiles = (a, b) => {
         const suitOrder = { 'm': 1, 'p': 2, 's': 3, 'z': 4 };
         const suitA = a.slice(-1), suitB = b.slice(-1);
@@ -140,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return results;
     };
 
+    // 渲染函式... (此處省略以保持可讀性，實際貼上時請用完整程式碼)
     const renderTiles = (container, hand, onClick = null) => {
         container.innerHTML = '';
         const sortedHand = [...hand].sort(sortTiles);
@@ -188,24 +190,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 10);
     };
 
+    // 頁面切換邏輯
     const switchView = (viewToShow) => {
-        [calculatorView, trainerView, counterView].forEach(v => v.classList.add('hidden'));
-        [showCalculatorBtn, showTrainerBtn, showCounterBtn].forEach(b => b.classList.remove('active'));
-        resetAllModals();
-        let view, btn;
-        if (viewToShow === 'calculator') { view = calculatorView; btn = showCalculatorBtn; }
-        else if (viewToShow === 'trainer') { view = trainerView; btn = showTrainerBtn; }
-        else { view = counterView; btn = showCounterBtn; }
-        view.classList.remove('hidden');
-        if (view.classList.contains('active')) view.classList.remove('active');
-        void view.offsetWidth;
-        view.classList.add('active');
-        btn.classList.add('active');
+        Object.values(views).forEach(hideElement);
+        Object.values(navButtons).forEach(b => b.classList.remove('active'));
+        
+        showElement(views[viewToShow]);
+        navButtons[viewToShow].classList.add('active');
     };
-    showCalculatorBtn.addEventListener('click', () => switchView('calculator'));
-    showTrainerBtn.addEventListener('click', () => switchView('trainer'));
-    showCounterBtn.addEventListener('click', () => switchView('counter'));
+    Object.keys(navButtons).forEach(key => {
+        navButtons[key].addEventListener('click', () => switchView(key));
+    });
 
+    // 聽牌計算機邏輯... (此處省略以保持可讀性，實際貼上時請用完整程式碼)
     const handlePaletteClick = (tile) => {
         const counts = myHand.reduce((acc, t) => { acc[t] = (acc[t] || 0) + 1; return acc; }, {});
         if (myHand.length < 17 && (counts[tile] || 0) < 4) {
@@ -237,6 +234,8 @@ document.addEventListener('DOMContentLoaded', () => {
         resultArea.classList.remove('show');
     });
 
+
+    // 清一色試煉邏輯... (此處省略以保持可讀性，實際貼上時請用完整程式碼)
     const setTrainerAnswerable = (isAnswerable) => {
         trainerNotTingBtn.disabled = !isAnswerable;
         answerArea.querySelectorAll('.tile').forEach(t => t.classList.toggle('disabled', !isAnswerable));
@@ -271,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setTrainerAnswerable(false);
     };
     const generateQingYiSeProblem = () => {
-        problemArea.classList.remove('hidden');
+        showElement(problemArea);
         trainerResultDiv.classList.remove('show');
         answerOptionsDiv.innerHTML = '';
         setTrainerAnswerable(true);
@@ -312,10 +311,10 @@ document.addEventListener('DOMContentLoaded', () => {
             while (options.size < Math.min(9, trainerProblem.answer.ting.length + 3)) { options.add(`${Math.floor(Math.random() * 9) + 1}${trainerProblem.hand[0].slice(-1)}`); }
             let selectedTing = [];
             renderTiles(answerOptionsDiv, [...options], (tile) => {
-                const tileEl = Array.from(answerOptionsDiv.children).find(el => el.dataset.tile === tile);
-                if (selectedTing.includes(tile)) { selectedTing = selectedTing.filter(t => t !== tile); tileEl.style.border = 'none'; }
-                else { selectedTing.push(tile); tileEl.style.border = '3px solid #1a73e8'; }
-                if (confirm("確定提交答案？")) { checkTrainerAnswer(selectedTing); }
+                 const tileEl = Array.from(answerOptionsDiv.children).find(el => el.dataset.tile === tile);
+                 if (selectedTing.includes(tile)) { selectedTing = selectedTing.filter(t => t !== tile); tileEl.style.border = 'none'; }
+                 else { selectedTing.push(tile); tileEl.style.border = '3px solid #1a73e8'; }
+                 if (confirm("確定提交答案？")) { checkTrainerAnswer(selectedTing); }
             });
         }
     };
@@ -325,6 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
     trainerShowAnswerBtn.addEventListener('click', showTrainerAnswer);
     trainerNotTingBtn.addEventListener('click', () => checkTrainerAnswer('notTing'));
 
+    // 麻將計數器邏輯
     const updateScoresUI = () => {
         counterState.players.forEach((player, index) => {
             const pod = playerPods[index];
@@ -351,14 +351,14 @@ document.addEventListener('DOMContentLoaded', () => {
             pod.querySelector('.player-name').textContent = player.name;
         });
         updateScoresUI();
-        counterSetup.classList.add('hidden');
-        counterMain.classList.remove('hidden');
+        hideElement(counterSetup);
+        showElement(counterMain);
     });
     const openScoringModal = (type) => {
-        resetAllModals();
+        showElement(scoringModal, 'flex');
         modalTitle.textContent = type === 'zimo' ? '自摸計分' : '胡牌計分';
-        zimoSection.classList.toggle('hidden', type !== 'zimo');
-        hupaiSection.classList.toggle('hidden', type !== 'hupai');
+        type === 'zimo' ? showElement(zimoSection) : hideElement(zimoSection);
+        type === 'hupai' ? showElement(hupaiSection) : hideElement(hupaiSection);
         taiCountInput.value = 1;
         delete modalConfirmBtn.dataset.winner; delete modalConfirmBtn.dataset.dealer; delete modalConfirmBtn.dataset.loser;
         const createPlayerButtons = (containerId, callback) => {
@@ -383,21 +383,17 @@ document.addEventListener('DOMContentLoaded', () => {
             createPlayerButtons('hupai-loser-select', (i) => modalConfirmBtn.dataset.loser = i);
         }
         modalConfirmBtn.dataset.type = type;
-        scoringModal.classList.remove('hidden');
     };
-    
-    // ★★★ 終極防護：為按鈕加上頁面檢查 ★★★
     btnZimo.addEventListener('click', () => {
-        if (!counterView.classList.contains('active')) return;
+        if (views.counter.style.display !== 'block') return;
         openScoringModal('zimo');
     });
     btnHupai.addEventListener('click', () => {
-        if (!counterView.classList.contains('active')) return;
+        if (views.counter.style.display !== 'block') return;
         openScoringModal('hupai');
     });
     btnSettle.addEventListener('click', () => {
-        if (!counterView.classList.contains('active')) return;
-        resetAllModals();
+        if (views.counter.style.display !== 'block') return;
         let payers = counterState.players.map((p, i) => ({ ...p, index: i })).filter(p => p.score < 0).sort((a,b) => a.score - b.score);
         let receivers = counterState.players.map((p, i) => ({ ...p, index: i })).filter(p => p.score > 0).sort((a,b) => b.score - a.score);
         let transactions = [];
@@ -412,11 +408,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
         settleDetails.innerHTML = transactions.length > 0 ? transactions.map(t => `<p>${t}</p>`).join('') : '<p>平手大吉！</p>';
-        settleModal.classList.remove('hidden');
+        showElement(settleModal, 'flex');
     });
 
-
-    modalCancelBtn.addEventListener('click', () => scoringModal.classList.add('hidden'));
+    modalCancelBtn.addEventListener('click', () => hideElement(scoringModal));
+    settleCloseBtn.addEventListener('click', () => hideElement(settleModal));
     modalConfirmBtn.addEventListener('click', () => {
         const type = modalConfirmBtn.dataset.type;
         const tai = parseInt(taiCountInput.value, 10);
@@ -447,11 +443,10 @@ document.addEventListener('DOMContentLoaded', () => {
             counterState.players[loserIndex].score -= winAmount;
         }
         updateScoresUI();
-        scoringModal.classList.add('hidden');
+        hideElement(scoringModal);
     });
-    settleCloseBtn.addEventListener('click', () => settleModal.classList.add('hidden'));
 
-    // --- 初始化 ---
+    // 初始化
     const initializeApp = () => {
         try {
             const initializePalette = () => {
@@ -463,12 +458,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             };
             initializePalette();
-            switchView('calculator'); // ★★★ 確保初始畫面是計算機 ★★★
+            // 初始顯示/隱藏元件
+            Object.values(views).forEach(hideElement);
+            hideElement(problemArea);
+            hideElement(counterMain);
+            switchView('calculator');
         } catch (e) {
             console.error("初始化失敗:", e);
             alert('頁面初始化時發生嚴重錯誤！請檢查 F12 主控台的錯誤訊息。');
         }
     };
-    
     initializeApp();
 });
