@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台灣麻將聽牌計算機</title>
+    <title>台灣麻將聽牌/計數器</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>台灣麻將聽牌計算機</h1>
+            <h1>台灣麻將聽牌/計數器</h1>
             <nav>
-                <button id="show-calculator" class="active">聽牌/打聽計算機</button>
+                <button id="show-calculator" class="active">聽牌計算機</button>
                 <button id="show-trainer">清一色試煉</button>
+                <button id="show-counter">麻將計數器</button>
             </nav>
         </header>
 
@@ -27,31 +28,123 @@
             </div>
             <div id="result-area" class="result-display"></div>
             <div class="tile-palette-area">
-                <h2>牌張選擇區 (萬、筒、索、字)</h2>
+                <h2>牌張選擇區</h2>
                 <div id="tile-palette">
-                    <div class="suit-group" id="palette-m"></div> <div class="suit-group" id="palette-p"></div> <div class="suit-group" id="palette-s"></div> <div class="suit-group" id="palette-z"></div> </div>
+                    <div class="suit-group" id="palette-m"></div>
+                    <div class="suit-group" id="palette-p"></div>
+                    <div class="suit-group" id="palette-s"></div>
+                    <div class="suit-group" id="palette-z"></div>
+                </div>
             </div>
         </main>
 
-        <main id="trainer" class="view">
+        <main id="trainer" class="view hidden">
             <div class="trainer-controls">
-                <h2>選擇練習模式</h2>
                 <button id="trainer-da-ting-btn">練習打聽</button>
                 <button id="trainer-ting-pai-btn">練習聽牌</button>
+                <button id="trainer-new-problem-btn">再出一題</button>
+                <button id="trainer-show-answer-btn">看解答</button>
             </div>
             <div id="problem-area" class="hidden">
-                <h2>題目：</h2>
+                <h2>題目：(模式: <span id="trainer-mode-display"></span>)</h2>
                 <div id="problem-hand" class="tile-group"></div>
                 <h3>你的答案是？</h3>
                 <div id="answer-area">
                     <div id="answer-options" class="tile-group"></div>
+                    <button id="trainer-not-ting-btn">還未聽牌</button>
                 </div>
-                 <button id="submit-answer-btn" class="hidden">提交答案</button>
                 <div id="trainer-result" class="result-display"></div>
+            </div>
+        </main>
+
+        <main id="counter" class="view hidden">
+            <div id="counter-setup">
+                <h2>遊戲設定</h2>
+                <div class="setup-grid">
+                    <input type="text" id="player-name-1" placeholder="東方玩家姓名" value="玩家一">
+                    <input type="text" id="player-name-2" placeholder="南方玩家姓名" value="玩家二">
+                    <input type="text" id="player-name-3" placeholder="西方玩家姓名" value="玩家三">
+                    <input type="text" id="player-name-4" placeholder="北方玩家姓名" value="玩家四">
+                </div>
+                <div class="stakes-selection">
+                    <h3>選擇籌碼 (底/台)</h3>
+                    <select id="stakes-select">
+                        <option value="1/1">1 / 1</option>
+                        <option value="3/1">3 / 1</option>
+                        <option value="5/2" selected>5 / 2</option>
+                        <option value="10/2">10 / 2</option>
+                        <option value="10/5">10 / 5</option>
+                    </select>
+                </div>
+                <button id="start-game-btn">開始計分</button>
+            </div>
+            <div id="counter-main" class="hidden">
+                <div id="mahjong-table">
+                    <div id="player-1" class="player-pod player-bottom">
+                        <span class="player-emoji"></span>
+                        <span class="player-name"></span>
+                        <span class="player-score"></span>
+                    </div>
+                    <div id="player-2" class="player-pod player-left">
+                        <span class="player-emoji"></span>
+                        <span class="player-name"></span>
+                        <span class="player-score"></span>
+                    </div>
+                    <div id="player-3" class="player-pod player-top">
+                        <span class="player-emoji"></span>
+                        <span class="player-name"></span>
+                        <span class="player-score"></span>
+                    </div>
+                    <div id="player-4" class="player-pod player-right">
+                        <span class="player-emoji"></span>
+                        <span class="player-name"></span>
+                        <span class="player-score"></span>
+                    </div>
+                    <div class="table-center-controls">
+                        <button id="btn-zimo">自摸</button>
+                        <button id="btn-hupai">胡牌</button>
+                        <button id="btn-settle">結算</button>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
 
+    <div id="scoring-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 id="modal-title">紀錄分數</h3>
+            <div id="zimo-section" class="hidden">
+                <p>誰自摸？</p>
+                <div id="zimo-winner-select" class="player-select-grid"></div>
+                <p>誰是莊家？</p>
+                <div id="zimo-dealer-select" class="player-select-grid"></div>
+            </div>
+            <div id="hupai-section" class="hidden">
+                <p>誰胡牌？</p>
+                <div id="hupai-winner-select" class="player-select-grid"></div>
+                <p>誰放槍？</p>
+                <div id="hupai-loser-select" class="player-select-grid"></div>
+            </div>
+            <div class="tai-input">
+                <label for="tai-count">幾台？</label>
+                <input type="number" id="tai-count" min="0" value="1">
+            </div>
+            <div class="modal-buttons">
+                <button id="modal-confirm-btn">確定</button>
+                <button id="modal-cancel-btn">取消</button>
+            </div>
+        </div>
+    </div>
+    <div id="settle-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>結算結果</h3>
+            <div id="settle-details"></div>
+            <div class="modal-buttons">
+                <button id="settle-close-btn">關閉</button>
+            </div>
+        </div>
+    </div>
+    
     <script src="script.js"></script>
 </body>
 </html>
