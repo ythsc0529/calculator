@@ -1,472 +1,514 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 全局狀態
-    let myHand = [];
-    let trainerProblem = { hand: [], type: '', answer: {} };
-    let currentTrainerMode = 'daTing';
-    let counterState = {
-        players: [],
-        stakes: { base: 0, perPoint: 0 }
-    };
-    const EMOJIS = ['😀', '😎', '😴', '🥳', '🤯', '😱', '🤔', '🤠', '👽', '👻', '🦊', '🐶'];
-
-    // 資料定義 (圖片映射)
+    // --- 常數與全局變數 (使用原始中文名稱) ---
     const TILE_TYPES = {
-        'm': { name: '萬', count: 9, prefix: ['一', '二', '三', '四', '五', '六', '七', '八', '九'] },
-        'p': { name: '筒', count: 9, prefix: ['一', '二', '三', '四', '五', '六', '七', '八', '九'] },
-        's': { name: '條', count: 9, prefix: ['一', '二', '三', '四', '五', '六', '七', '八', '九'] },
-        'z': { name: '字', count: 7, names: ['東', '南', '西', '北', '中', '發', '白'] }
+        'm': '萬', 'p': '筒', 's': '條', 'z': '字'
     };
-    const TILE_IMAGE_MAP = new Map();
-    const ALL_TILES = [];
-    const SUITS_ORDER = ['m', 'p', 's', 'z'];
-    SUITS_ORDER.forEach(suit => {
-        const type = TILE_TYPES[suit];
-        for (let i = 1; i <= type.count; i++) {
-            const tileKey = `${i}${suit}`;
-            ALL_TILES.push(tileKey);
-            let imageName;
-            if (suit !== 'z') {
-                imageName = `${type.prefix[i - 1]}${type.name}.svg`;
-            } else {
-                imageName = `${type.names[i - 1]}.svg`;
-            }
-            TILE_IMAGE_MAP.set(tileKey, `tiles/${imageName}`);
-        }
-    });
+    const Z_TILES = ['東', '南', '西', '北', '中', '發', '白'];
+    const TILES = {
+        'm': Array.from({length: 9}, (_, i) => `${i + 1}萬`),
+        'p': Array.from({length: 9}, (_, i) => `${i + 1}筒`),
+        's': Array.from({length: 9}, (_, i) => `${i + 1}條`),
+        'z': Z_TILES
+    };
+    // 建立一個包含所有牌的陣列，用於排序和檢查
+    const ALL_TILES = [].concat(TILES.m, TILES.p, TILES.s, TILES.z);
+    const EMOJIS = ['😀', '😎', '😇', '😂', '🥳', '🤩', '🤯', '🤗'];
 
-    // DOM 元素獲取
-    const views = {
-        calculator: document.getElementById('calculator'),
-        trainer: document.getElementById('trainer'),
-        counter: document.getElementById('counter'),
-    };
-    const navButtons = {
-        calculator: document.getElementById('show-calculator'),
-        trainer: document.getElementById('show-trainer'),
-        counter: document.getElementById('show-counter'),
-    };
-    const myHandDiv = document.getElementById('my-hand');
-    const resultArea = document.getElementById('result-area');
+    let userHand = [];
+    let players = [];
+    let stake = { base: 0, 台: 0 };
+    let challengeState = {};
+
+    // --- DOM 元素 ---
+    const navButtons = document.querySelectorAll('.nav-btn');
+    const contentSections = document.querySelectorAll('.content-section');
+    
+    // 計算機
+    const userHandDisplay = document.getElementById('user-hand');
+    const tileSelectionGrid = document.getElementById('tile-selection');
     const calculateBtn = document.getElementById('calculate-btn');
-    const clearBtn = document.getElementById('clear-btn');
-    const trainerDaTingBtn = document.getElementById('trainer-da-ting-btn');
-    const trainerTingPaiBtn = document.getElementById('trainer-ting-pai-btn');
-    const trainerNewProblemBtn = document.getElementById('trainer-new-problem-btn');
-    const trainerShowAnswerBtn = document.getElementById('trainer-show-answer-btn');
-    const trainerModeDisplay = document.getElementById('trainer-mode-display');
-    const problemArea = document.getElementById('problem-area');
-    const problemHandDiv = document.getElementById('problem-hand');
-    const answerArea = document.getElementById('answer-area');
-    const answerOptionsDiv = document.getElementById('answer-options');
-    const trainerNotTingBtn = document.getElementById('trainer-not-ting-btn');
-    const trainerResultDiv = document.getElementById('trainer-result');
+    const clearHandBtn = document.getElementById('clear-hand-btn');
+    const calculatorResultArea = document.getElementById('calculator-result-area');
+
+    // 清一色試煉
+    const challengeTingBtn = document.getElementById('challenge-ting-btn');
+    const challengeDaTingBtn = document.getElementById('challenge-da-ting-btn');
+    const challengeQuestion = document.getElementById('challenge-question');
+    const challengeHandDisplay = document.getElementById('challenge-hand');
+    const challengeAnswerArea = document.getElementById('challenge-answer-area');
+    const challengeFeedback = document.getElementById('challenge-feedback');
+    const nextChallengeBtn = document.getElementById('next-challenge-btn');
+
+    // 計數器 & Modal (與前版相同)
     const counterSetup = document.getElementById('counter-setup');
-    const playerNameInputs = [document.getElementById('player-name-1'), document.getElementById('player-name-2'), document.getElementById('player-name-3'), document.getElementById('player-name-4')];
-    const stakesSelect = document.getElementById('stakes-select');
-    const startGameBtn = document.getElementById('start-game-btn');
     const counterMain = document.getElementById('counter-main');
-    const playerPods = [document.getElementById('player-1'), document.getElementById('player-2'), document.getElementById('player-3'), document.getElementById('player-4')];
-    const btnZimo = document.getElementById('btn-zimo');
-    const btnHupai = document.getElementById('btn-hupai');
-    const btnSettle = document.getElementById('btn-settle');
-    const scoringModal = document.getElementById('scoring-modal');
-    const modalTitle = document.getElementById('modal-title');
-    const zimoSection = document.getElementById('zimo-section');
-    const hupaiSection = document.getElementById('hupai-section');
-    const taiCountInput = document.getElementById('tai-count');
-    const modalConfirmBtn = document.getElementById('modal-confirm-btn');
-    const modalCancelBtn = document.getElementById('modal-cancel-btn');
-    const settleModal = document.getElementById('settle-modal');
-    const settleDetails = document.getElementById('settle-details');
-    const settleCloseBtn = document.getElementById('settle-close-btn');
+    const startGameBtn = document.getElementById('start-game-btn');
+    const zimoBtn = document.getElementById('zimo-btn');
+    const huBtn = document.getElementById('hu-btn');
+    const settleBtn = document.getElementById('settle-btn');
+    const modal = document.getElementById('modal');
+    const modalBody = document.getElementById('modal-body');
+    const closeBtn = document.querySelector('.close-btn');
 
-    // ★★★ 終極防護：用 style.display 控制顯示/隱藏的函式 ★★★
-    const showElement = (el, displayMode = 'block') => { if (el) el.style.display = displayMode; };
-    const hideElement = (el) => { if (el) el.style.display = 'none'; };
+    // --- 初始化函數 ---
+    function init() {
+        setupNavigation();
+        setupCalculator();
+        setupChallenge();
+        setupCounter();
+        setupModal();
+    }
 
-    // 麻將演算法... (此處省略以保持可讀性，實際貼上時請用完整程式碼)
-    const sortTiles = (a, b) => {
-        const suitOrder = { 'm': 1, 'p': 2, 's': 3, 'z': 4 };
-        const suitA = a.slice(-1), suitB = b.slice(-1);
-        if (suitA !== suitB) return suitOrder[suitA] - suitOrder[suitB];
-        return parseInt(a, 10) - parseInt(b, 10);
-    };
-    const checkHu = (hand) => {
-        if (hand.length === 0) return true;
-        if (hand.length >= 3 && hand[0] === hand[1] && hand[0] === hand[2]) {
-            if (checkHu(hand.slice(3))) return true;
-        }
-        const num = parseInt(hand[0], 10), suit = hand[0].slice(-1);
-        if (suit !== 'z' && num <= 7) {
-            const next1 = `${num + 1}${suit}`, next2 = `${num + 2}${suit}`;
-            const idx1 = hand.indexOf(next1), idx2 = hand.indexOf(next2);
-            if (idx1 > 0 && idx2 > 0) {
-                const remainingHand = hand.filter((_, i) => i !== 0 && i !== idx1 && i !== idx2);
-                if (checkHu(remainingHand)) return true;
-            }
-        }
-        return false;
-    };
-    const isWinningHand = (hand) => {
-        if (hand.length < 2 || hand.length % 3 !== 2) return false;
-        const sortedHand = [...hand].sort(sortTiles);
-        for (const tile of new Set(sortedHand)) {
-            const counts = sortedHand.reduce((acc, t) => { acc[t] = (acc[t] || 0) + 1; return acc; }, {});
-            if (counts[tile] >= 2) {
-                const tempHand = [...sortedHand];
-                tempHand.splice(tempHand.indexOf(tile), 1);
-                tempHand.splice(tempHand.indexOf(tile), 1);
-                if (checkHu(tempHand)) return true;
-            }
-        }
-        return false;
-    };
-    const findTingPai = (hand) => {
-        const ting = new Set();
-        for (const tile of ALL_TILES) {
-            const counts = hand.reduce((acc, t) => { acc[t] = (acc[t] || 0) + 1; return acc; }, {});
-            if ((counts[tile] || 0) >= 4) continue;
-            if (isWinningHand([...hand, tile])) ting.add(tile);
-        }
-        return [...ting];
-    };
-    const findDaTing = (hand) => {
-        const results = {};
-        for (const tileToDiscard of new Set(hand)) {
-            const tempHand = [...hand];
-            tempHand.splice(tempHand.indexOf(tileToDiscard), 1);
-            const ting = findTingPai(tempHand);
-            if (ting.length > 0) results[tileToDiscard] = ting;
-        }
-        return results;
-    };
-
-    // 渲染函式... (此處省略以保持可讀性，實際貼上時請用完整程式碼)
-    const renderTiles = (container, hand, onClick = null) => {
-        container.innerHTML = '';
-        const sortedHand = [...hand].sort(sortTiles);
-        sortedHand.forEach((tile, index) => {
-            const tileDiv = document.createElement('div');
-            tileDiv.className = 'tile';
-            tileDiv.style.animation = `popIn 0.3s ease forwards ${index * 0.02}s`;
-            tileDiv.style.backgroundImage = `url("${TILE_IMAGE_MAP.get(tile)}")`;
-            tileDiv.dataset.tile = tile;
-            if (onClick) {
-                tileDiv.addEventListener('click', () => onClick(tile));
-            }
-            container.appendChild(tileDiv);
+    // --- 導覽列控制 ---
+    function setupNavigation() {
+        navButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetId = button.id.replace('nav-', '') + '-section';
+                navButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                contentSections.forEach(section => {
+                    section.classList.toggle('active', section.id === targetId);
+                });
+            });
         });
-    };
-    const renderResult = (message, daTingResults = {}, tingPaiResults = []) => {
-        resultArea.classList.remove('show');
-        setTimeout(() => {
-            if (message.includes("胡牌")) {
-                resultArea.innerHTML = `<p class="hu">${message}</p>`;
-            } else {
-                resultArea.innerHTML = `<p>${message}</p>`;
-                if (Object.keys(daTingResults).length > 0) {
-                    for (const discardTile in daTingResults) {
-                        const itemDiv = document.createElement('div');
-                        const tingGroup = document.createElement('div');
-                        tingGroup.className = 'tile-group';
-                        renderTiles(tingGroup, daTingResults[discardTile]);
-                        const p = document.createElement('p');
-                        p.style.display = 'flex'; p.style.alignItems = 'center'; p.style.gap = '10px';
-                        const discardDivContainer = document.createElement('div');
-                        renderTiles(discardDivContainer, [discardTile]);
-                        p.append('打 ', discardDivContainer.firstChild.cloneNode(true), ' 聽:');
-                        itemDiv.appendChild(p); itemDiv.appendChild(tingGroup);
-                        resultArea.appendChild(itemDiv);
-                    }
-                }
-                if (tingPaiResults.length > 0) {
-                    const tingGroup = document.createElement('div');
-                    tingGroup.className = 'tile-group';
-                    renderTiles(tingGroup, tingPaiResults);
-                    resultArea.appendChild(tingGroup);
-                }
-            }
-            resultArea.classList.add('show');
-        }, 10);
-    };
+    }
 
-    // 頁面切換邏輯
-    const switchView = (viewToShow) => {
-        Object.values(views).forEach(hideElement);
-        Object.values(navButtons).forEach(b => b.classList.remove('active'));
+    // --- 牌面顯示工具 (現在直接使用 tileName) ---
+    function createTileImage(tileName, className = 'mahjong-tile') {
+        const img = document.createElement('img');
+        img.src = `images/${tileName}.svg`;
+        img.alt = tileName;
+        img.className = className;
+        img.dataset.tile = tileName; // 使用 data-tile 來儲存牌名
+        return img;
+    }
+
+    function createTileImageHtml(tileName) {
+        return `<img src="images/${tileName}.svg" alt="${tileName}" class="mahjong-tile">`;
+    }
+
+    function sortHand(hand) {
+        return hand.slice().sort((a, b) => ALL_TILES.indexOf(a) - ALL_TILES.indexOf(b));
+    }
+
+    // --- 聽牌/打聽計算機 ---
+    function setupCalculator() {
+        for (const [typeKey, typeName] of Object.entries(TILE_TYPES)) {
+            const categoryTitle = document.createElement('div');
+            categoryTitle.className = 'tile-category';
+            categoryTitle.textContent = typeName;
+            tileSelectionGrid.appendChild(categoryTitle);
+
+            TILES[typeKey].forEach(tileName => {
+                const img = createTileImage(tileName);
+                img.addEventListener('click', () => addTileToHand(tileName));
+                tileSelectionGrid.appendChild(img);
+            });
+        }
+        clearHandBtn.addEventListener('click', clearHand);
+        calculateBtn.addEventListener('click', calculateHand);
+    }
+    
+    function addTileToHand(tileName) {
+        if (userHand.length >= 17) {
+            alert('手牌最多17張'); return;
+        }
+        if (userHand.filter(t => t === tileName).length >= 4) {
+            alert(`"${tileName}" 已經有4張了`); return;
+        }
+        userHand.push(tileName);
+        renderUserHand();
+    }
+
+    function removeTileFromHand(index) {
+        const sorted = sortHand(userHand);
+        // 找到要刪除的牌在原手牌中的位置
+        const originalIndex = userHand.indexOf(sorted[index]);
+        if (originalIndex > -1) {
+            userHand.splice(originalIndex, 1);
+        }
+        renderUserHand();
+    }
+    
+    function renderUserHand() {
+        userHandDisplay.innerHTML = '';
+        const sorted = sortHand(userHand);
+        sorted.forEach((tileName, index) => {
+            const img = createTileImage(tileName);
+            img.addEventListener('click', () => removeTileFromHand(index));
+            userHandDisplay.appendChild(img);
+        });
+    }
+
+    function clearHand() {
+        userHand = [];
+        renderUserHand();
+        calculatorResultArea.innerHTML = '';
+        calculatorResultArea.style.display = 'none';
+    }
+
+    function calculateHand() {
+        calculatorResultArea.innerHTML = '';
+        calculatorResultArea.style.display = 'block';
+
+        const handSize = userHand.length;
+        if (handSize === 0) {
+            calculatorResultArea.innerHTML = '<h3>請先輸入您的手牌</h3>';
+            return;
+        }
+        if (handSize % 3 !== 1 && handSize % 3 !== 2) {
+             calculatorResultArea.innerHTML = '<h3>牌數錯誤，非聽牌或胡牌的牌數，已相公</h3>';
+            return;
+        }
+
+        const handCounts = getHandCounts(userHand);
+
+        if (handSize % 3 === 2) {
+            if (isWinningHand(handCounts)) {
+                calculatorResultArea.innerHTML = '<h3>恭喜，您已胡牌！</h3>';
+                return;
+            }
+        }
         
-        showElement(views[viewToShow]);
-        navButtons[viewToShow].classList.add('active');
-    };
-    Object.keys(navButtons).forEach(key => {
-        navButtons[key].addEventListener('click', () => switchView(key));
-    });
-
-    // 聽牌計算機邏輯... (此處省略以保持可讀性，實際貼上時請用完整程式碼)
-    const handlePaletteClick = (tile) => {
-        const counts = myHand.reduce((acc, t) => { acc[t] = (acc[t] || 0) + 1; return acc; }, {});
-        if (myHand.length < 17 && (counts[tile] || 0) < 4) {
-            myHand.push(tile);
-            renderTiles(myHandDiv, myHand, handleHandClick);
-        }
-    };
-    const handleHandClick = (tile) => {
-        myHand.splice(myHand.indexOf(tile), 1);
-        renderTiles(myHandDiv, myHand, handleHandClick);
-    };
-    calculateBtn.addEventListener('click', () => {
-        const len = myHand.length;
-        const counts = myHand.reduce((acc, t) => { acc[t] = (acc[t] || 0) + 1; return acc; }, {});
-        if (Object.values(counts).some(c => c > 4)) { renderResult('已相公 (單張牌超過4張)。'); return; }
-        if (len % 3 === 2 && isWinningHand(myHand)) { renderResult('恭喜，您已胡牌！'); return; }
-        if (len < 1 || len > 17 || len % 3 === 0) { renderResult('牌數不正確 (應為1, 2, 4, 5...張)，請重新輸入。'); return; }
-        if (len % 3 === 1) {
-            const ting = findTingPai(myHand);
-            renderResult(ting.length > 0 ? '聽牌！胡以下牌：' : '還未聽牌。', {}, ting);
-        } else if (len % 3 === 2) {
-            const daTing = findDaTing(myHand);
-            renderResult(Object.keys(daTing).length > 0 ? '打聽建議：' : '還未聽牌，無法打聽。', daTing, []);
-        }
-    });
-    clearBtn.addEventListener('click', () => {
-        myHand = [];
-        renderTiles(myHandDiv, myHand, handleHandClick);
-        resultArea.classList.remove('show');
-    });
-
-
-    // 清一色試煉邏輯... (此處省略以保持可讀性，實際貼上時請用完整程式碼)
-    const setTrainerAnswerable = (isAnswerable) => {
-        trainerNotTingBtn.disabled = !isAnswerable;
-        answerArea.querySelectorAll('.tile').forEach(t => t.classList.toggle('disabled', !isAnswerable));
-        problemHandDiv.querySelectorAll('.tile').forEach(t => t.classList.toggle('disabled', !isAnswerable));
-    };
-    const showTrainerAnswer = () => {
-        if (!trainerProblem.hand || trainerProblem.hand.length === 0) return;
-        let answerText = '';
-        if (trainerProblem.type === 'noTing') { answerText = '正確答案：確實還未聽牌。'; }
-        else if (trainerProblem.type === 'tingPai') { answerText = `正確答案：聽 ${trainerProblem.answer.ting.length} 張牌。`; }
-        else { answerText = `正確答案：打`; }
-        trainerResultDiv.innerHTML = `<p class="correct">${answerText}</p>`;
-        if (trainerProblem.type === 'daTing') {
-            const group = document.createElement('div');
-            group.className = 'tile-group'; renderTiles(group, [trainerProblem.answer.da]);
-            trainerResultDiv.appendChild(group);
-        } else if (trainerProblem.type === 'tingPai') {
-            const group = document.createElement('div');
-            group.className = 'tile-group'; renderTiles(group, trainerProblem.answer.ting);
-            trainerResultDiv.appendChild(group);
-        }
-        trainerResultDiv.classList.add('show');
-        setTrainerAnswerable(false);
-    };
-    const checkTrainerAnswer = (userAnswer) => {
-        let isCorrect = false;
-        if (userAnswer === 'notTing') { isCorrect = trainerProblem.type === 'noTing'; }
-        else if (trainerProblem.type === 'daTing') { isCorrect = userAnswer === trainerProblem.answer.da; }
-        else { isCorrect = JSON.stringify(userAnswer.sort(sortTiles)) === JSON.stringify(trainerProblem.answer.ting.sort(sortTiles)); }
-        trainerResultDiv.innerHTML = `<p class="${isCorrect ? 'correct' : 'incorrect'}">${isCorrect ? '正確！' : '錯誤！'}</p>`;
-        trainerResultDiv.classList.add('show');
-        setTrainerAnswerable(false);
-    };
-    const generateQingYiSeProblem = () => {
-        showElement(problemArea);
-        trainerResultDiv.classList.remove('show');
-        answerOptionsDiv.innerHTML = '';
-        setTrainerAnswerable(true);
-        trainerModeDisplay.textContent = currentTrainerMode === 'daTing' ? '打聽' : '聽牌';
-        let hand = [], answer = {}, attempts = 0;
-        while (attempts < 100) {
-            const suit = ['m', 'p', 's'][Math.floor(Math.random() * 3)];
-            const tilePool = [];
-            for (let i = 1; i <= 9; i++) { for (let j = 0; j < 4; j++) tilePool.push(`${i}${suit}`); }
-            const modeRoll = Math.random();
-            let problemType = (modeRoll < 0.2) ? 'noTing' : currentTrainerMode;
-            if (problemType === 'daTing') {
-                const tempHand = [];
-                for (let i = 0; i < 16; i++) { tempHand.push(tilePool.splice(Math.floor(Math.random() * tilePool.length), 1)[0]); }
-                if (findTingPai(tempHand).length > 0) {
-                    const badTile = tilePool[Math.floor(Math.random() * tilePool.length)];
-                    hand = [...tempHand, badTile];
-                    if (Object.values(hand.reduce((acc, t) => { acc[t] = (acc[t] || 0) + 1; return acc; }, {})).some(c => c > 4)) continue;
-                    answer = { da: badTile };
-                    trainerProblem = { hand, type: problemType, answer }; break;
-                }
-            } else if (problemType === 'tingPai') {
-                for (let i = 0; i < 16; i++) { hand.push(tilePool.splice(Math.floor(Math.random() * tilePool.length), 1)[0]); }
-                const ting = findTingPai(hand);
-                if (ting.length > 0) { answer = { ting }; trainerProblem = { hand, type: problemType, answer }; break; }
-            } else {
-                for (let i = 0; i < 16; i++) { hand.push(tilePool.splice(Math.floor(Math.random() * tilePool.length), 1)[0]); }
-                if (findTingPai(hand).length === 0 && Object.keys(findDaTing(hand)).length === 0) {
-                    answer = {}; trainerProblem = { hand, type: problemType, answer }; break;
-                }
-            }
-            attempts++;
-        }
-        if (attempts >= 100) { alert("出題失敗，請點擊“再出一題”"); return; }
-        renderTiles(problemHandDiv, trainerProblem.hand, (tile) => { if (trainerProblem.type === 'daTing') checkTrainerAnswer(tile); });
-        if (trainerProblem.type === 'tingPai') {
-            const options = new Set(trainerProblem.answer.ting);
-            while (options.size < Math.min(9, trainerProblem.answer.ting.length + 3)) { options.add(`${Math.floor(Math.random() * 9) + 1}${trainerProblem.hand[0].slice(-1)}`); }
-            let selectedTing = [];
-            renderTiles(answerOptionsDiv, [...options], (tile) => {
-                 const tileEl = Array.from(answerOptionsDiv.children).find(el => el.dataset.tile === tile);
-                 if (selectedTing.includes(tile)) { selectedTing = selectedTing.filter(t => t !== tile); tileEl.style.border = 'none'; }
-                 else { selectedTing.push(tile); tileEl.style.border = '3px solid #1a73e8'; }
-                 if (confirm("確定提交答案？")) { checkTrainerAnswer(selectedTing); }
+        let discardOptions = findDiscardToTing(userHand);
+        if (discardOptions.length > 0) {
+            let html = '<h3>打聽建議：</h3>';
+            discardOptions.forEach(opt => {
+                html += `
+                    <div class="result-group">
+                        打 <div class="tile-group">${createTileImageHtml(opt.discard)}</div>
+                        聽 <div class="tile-group">${opt.ting.map(createTileImageHtml).join('')}</div>
+                    </div>
+                `;
             });
+            calculatorResultArea.innerHTML = html;
+            return;
         }
-    };
-    trainerDaTingBtn.addEventListener('click', () => { currentTrainerMode = 'daTing'; generateQingYiSeProblem(); });
-    trainerTingPaiBtn.addEventListener('click', () => { currentTrainerMode = 'tingPai'; generateQingYiSeProblem(); });
-    trainerNewProblemBtn.addEventListener('click', generateQingYiSeProblem);
-    trainerShowAnswerBtn.addEventListener('click', showTrainerAnswer);
-    trainerNotTingBtn.addEventListener('click', () => checkTrainerAnswer('notTing'));
 
-    // 麻將計數器邏輯
-    const updateScoresUI = () => {
-        counterState.players.forEach((player, index) => {
-            const pod = playerPods[index];
-            const scoreEl = pod.querySelector('.player-score');
-            scoreEl.textContent = player.score;
-            scoreEl.className = 'player-score';
-            if (player.score > 0) scoreEl.classList.add('positive');
-            if (player.score < 0) scoreEl.classList.add('negative');
-        });
-    };
-    startGameBtn.addEventListener('click', () => {
-        const stakesValue = stakesSelect.value.split('/');
-        counterState.stakes = { base: parseInt(stakesValue[0], 10), perPoint: parseInt(stakesValue[1], 10) };
-        const usedEmojis = new Set();
-        counterState.players = playerNameInputs.map((input, index) => {
-            let emoji;
-            do { emoji = EMOJIS[Math.floor(Math.random() * EMOJIS.length)]; } while (usedEmojis.has(emoji));
-            usedEmojis.add(emoji);
-            return { name: input.value || `玩家 ${index + 1}`, score: 0, emoji: emoji };
-        });
-        counterState.players.forEach((player, index) => {
-            const pod = playerPods[index];
-            pod.querySelector('.player-emoji').textContent = player.emoji;
-            pod.querySelector('.player-name').textContent = player.name;
-        });
-        updateScoresUI();
-        hideElement(counterSetup);
-        showElement(counterMain);
-    });
-    const openScoringModal = (type) => {
-        showElement(scoringModal, 'flex');
-        modalTitle.textContent = type === 'zimo' ? '自摸計分' : '胡牌計分';
-        type === 'zimo' ? showElement(zimoSection) : hideElement(zimoSection);
-        type === 'hupai' ? showElement(hupaiSection) : hideElement(hupaiSection);
-        taiCountInput.value = 1;
-        delete modalConfirmBtn.dataset.winner; delete modalConfirmBtn.dataset.dealer; delete modalConfirmBtn.dataset.loser;
-        const createPlayerButtons = (containerId, callback) => {
-            const container = document.getElementById(containerId);
-            container.innerHTML = '';
-            counterState.players.forEach((player, index) => {
-                const btn = document.createElement('button');
-                btn.textContent = player.name; btn.dataset.index = index;
-                btn.addEventListener('click', () => {
-                    Array.from(container.children).forEach(child => child.classList.remove('selected'));
-                    btn.classList.add('selected');
-                    callback(index);
-                });
-                container.appendChild(btn);
-            });
-        };
-        if (type === 'zimo') {
-            createPlayerButtons('zimo-winner-select', (i) => modalConfirmBtn.dataset.winner = i);
-            createPlayerButtons('zimo-dealer-select', (i) => modalConfirmBtn.dataset.dealer = i);
-        } else {
-            createPlayerButtons('hupai-winner-select', (i) => modalConfirmBtn.dataset.winner = i);
-            createPlayerButtons('hupai-loser-select', (i) => modalConfirmBtn.dataset.loser = i);
+        let tingOptions = findTing(userHand);
+        if (tingOptions.length > 0) {
+            let html = '<h3>已聽牌，聽：</h3>';
+            html += `<div class="result-group"><div class="tile-group">${tingOptions.map(createTileImageHtml).join('')}</div></div>`;
+            calculatorResultArea.innerHTML = html;
+            return;
         }
-        modalConfirmBtn.dataset.type = type;
-    };
-    btnZimo.addEventListener('click', () => {
-        if (views.counter.style.display !== 'block') return;
-        openScoringModal('zimo');
-    });
-    btnHupai.addEventListener('click', () => {
-        if (views.counter.style.display !== 'block') return;
-        openScoringModal('hupai');
-    });
-    btnSettle.addEventListener('click', () => {
-        if (views.counter.style.display !== 'block') return;
-        let payers = counterState.players.map((p, i) => ({ ...p, index: i })).filter(p => p.score < 0).sort((a,b) => a.score - b.score);
-        let receivers = counterState.players.map((p, i) => ({ ...p, index: i })).filter(p => p.score > 0).sort((a,b) => b.score - a.score);
-        let transactions = [];
-        payers.forEach(payer => {
-            let amountToPay = -payer.score;
-            receivers.forEach(receiver => {
-                if (amountToPay <= 0 || receiver.score <= 0) return;
-                const amountToTransfer = Math.min(amountToPay, receiver.score);
-                transactions.push(`${payer.name}  ➡️  ${receiver.name}  :  ${amountToTransfer} 點`);
-                amountToPay -= amountToTransfer;
-                receiver.score -= amountToTransfer;
-            });
-        });
-        settleDetails.innerHTML = transactions.length > 0 ? transactions.map(t => `<p>${t}</p>`).join('') : '<p>平手大吉！</p>';
-        showElement(settleModal, 'flex');
-    });
-
-    modalCancelBtn.addEventListener('click', () => hideElement(scoringModal));
-    settleCloseBtn.addEventListener('click', () => hideElement(settleModal));
-    modalConfirmBtn.addEventListener('click', () => {
-        const type = modalConfirmBtn.dataset.type;
-        const tai = parseInt(taiCountInput.value, 10);
-        if (isNaN(tai) || tai < 0) { alert('請輸入有效的台數'); return; }
-        const { base, perPoint } = counterState.stakes;
-        const winnerIndex = parseInt(modalConfirmBtn.dataset.winner, 10);
-        if (isNaN(winnerIndex)) { alert('請選擇贏家！'); return; }
-        if (type === 'zimo') {
-            const dealerIndex = parseInt(modalConfirmBtn.dataset.dealer, 10);
-            if (isNaN(dealerIndex)) { alert('請選擇莊家！'); return; }
-            let totalWin = 0;
-            for (let i = 0; i < 4; i++) {
-                if (i === winnerIndex) continue;
-                const isDealer = (i === dealerIndex);
-                const winnerIsDealer = (winnerIndex === dealerIndex);
-                const currentTai = (isDealer || winnerIsDealer) ? tai + 1 : tai;
-                const loss = base + (currentTai * perPoint);
-                counterState.players[i].score -= loss;
-                totalWin += loss;
-            }
-            counterState.players[winnerIndex].score += totalWin;
-        } else {
-            const loserIndex = parseInt(modalConfirmBtn.dataset.loser, 10);
-            if (isNaN(loserIndex)) { alert('請選擇放槍的玩家！'); return; }
-            if (loserIndex === winnerIndex) { alert('贏家和放槍者不能是同一人！'); return; }
-            const winAmount = base + (tai * perPoint);
-            counterState.players[winnerIndex].score += winAmount;
-            counterState.players[loserIndex].score -= winAmount;
+        calculatorResultArea.innerHTML = '<h3>還未聽牌</h3>';
+    }
+    
+    // --- 核心麻將胡牌演算法 (已修改為直接處理中文名稱) ---
+    function getHandCounts(hand) {
+        const counts = {};
+        ALL_TILES.forEach(t => counts[t] = 0);
+        hand.forEach(t => counts[t]++);
+        return counts;
+    }
+    
+    function isWinningHand(counts, depth = 0) {
+        let handEmpty = true;
+        for (const tile in counts) {
+            if (counts[tile] > 0) { handEmpty = false; break; }
         }
-        updateScoresUI();
-        hideElement(scoringModal);
-    });
+        if (handEmpty) return true;
 
-    // 初始化
-    const initializeApp = () => {
-        try {
-            const initializePalette = () => {
-                SUITS_ORDER.forEach(suit => {
-                    const container = document.getElementById(`palette-${suit}`);
-                    if (container) {
-                        renderTiles(container, ALL_TILES.filter(tile => tile.endsWith(suit)), handlePaletteClick);
+        if (depth === 0) {
+            for (const tile of ALL_TILES) {
+                if (counts[tile] >= 2) {
+                    counts[tile] -= 2;
+                    if (isWinningHand(counts, depth + 1)) {
+                        counts[tile] += 2; return true;
                     }
-                });
-            };
-            initializePalette();
-            // 初始顯示/隱藏元件
-            Object.values(views).forEach(hideElement);
-            hideElement(problemArea);
-            hideElement(counterMain);
-            switchView('calculator');
-        } catch (e) {
-            console.error("初始化失敗:", e);
-            alert('頁面初始化時發生嚴重錯誤！請檢查 F12 主控台的錯誤訊息。');
+                    counts[tile] += 2;
+                }
+            }
+            return false;
+        } else {
+            const firstTile = ALL_TILES.find(t => counts[t] > 0);
+            if (!firstTile) return true;
+
+            if (counts[firstTile] >= 3) {
+                counts[firstTile] -= 3;
+                if (isWinningHand(counts, depth + 1)) {
+                    counts[firstTile] += 3; return true;
+                }
+                counts[firstTile] += 3;
+            }
+
+            // **判斷順子的邏輯修改**
+            const suit = firstTile.slice(-1);
+            if (['萬', '筒', '條'].includes(suit)) {
+                const num = parseInt(firstTile);
+                if (num <= 7) {
+                    const next1 = `${num + 1}${suit}`;
+                    const next2 = `${num + 2}${suit}`;
+                    if (counts[next1] > 0 && counts[next2] > 0) {
+                        counts[firstTile]--; counts[next1]--; counts[next2]--;
+                        if (isWinningHand(counts, depth + 1)) {
+                            counts[firstTile]++; counts[next1]++; counts[next2]++;
+                            return true;
+                        }
+                        counts[firstTile]++; counts[next1]++; counts[next2]++;
+                    }
+                }
+            }
+            return false;
         }
-    };
-    initializeApp();
+    }
+    
+    function findTing(hand) {
+        const ting = new Set();
+        const handCounts = getHandCounts(hand);
+        for (const tile of ALL_TILES) {
+            if (handCounts[tile] < 4) { // 加上這張牌不能超過4張
+                const tempHand = [...hand, tile];
+                if (isWinningHand(getHandCounts(tempHand))) {
+                    ting.add(tile);
+                }
+            }
+        }
+        return sortHand(Array.from(ting));
+    }
+    
+    function findDiscardToTing(hand) {
+        const options = [];
+        const uniqueTiles = Array.from(new Set(hand));
+        for (const discardTile of uniqueTiles) {
+            const tempHand = [...hand];
+            tempHand.splice(tempHand.indexOf(discardTile), 1);
+            const tingResult = findTing(tempHand);
+            if (tingResult.length > 0) {
+                options.push({ discard: discardTile, ting: tingResult });
+            }
+        }
+        return options;
+    }
+
+    // --- 清一色試煉 (已更新為使用中文名稱) ---
+    function setupChallenge() {
+        challengeTingBtn.addEventListener('click', () => startChallenge('ting'));
+        challengeDaTingBtn.addEventListener('click', () => startChallenge('da-ting'));
+        nextChallengeBtn.addEventListener('click', () => startChallenge(challengeState.mode));
+    }
+
+    function startChallenge(mode) {
+        challengeTingBtn.classList.toggle('active', mode === 'ting');
+        challengeDaTingBtn.classList.toggle('active', mode === 'da-ting');
+        challengeFeedback.innerHTML = '';
+        challengeAnswerArea.innerHTML = '';
+        nextChallengeBtn.style.display = 'none';
+
+        challengeState.mode = mode;
+        const suitKey = ['m', 'p', 's'][Math.floor(Math.random() * 3)];
+        const suitName = TILE_TYPES[suitKey];
+        const suitTiles = TILES[suitKey];
+        const handSize = mode === 'ting' ? 13 : 14;
+
+        let hand = generateChallengeHand(suitTiles, handSize);
+        challengeState.hand = hand;
+
+        if (mode === 'ting') {
+            challengeQuestion.textContent = `[練習聽牌] 這副 ${suitName} 牌聽什麼？`;
+            challengeState.correctAnswer = findTing(hand);
+        } else {
+            challengeQuestion.textContent = `[練習打聽] 這副 ${suitName} 牌該打哪張，聽什麼？`;
+            challengeState.correctAnswer = findDiscardToTing(hand);
+        }
+
+        if (challengeState.correctAnswer.length === 0) {
+            startChallenge(mode); return;
+        }
+
+        challengeHandDisplay.innerHTML = '';
+        sortHand(hand).forEach(tileName => {
+            challengeHandDisplay.appendChild(createTileImage(tileName));
+        });
+
+        challengeAnswerArea.innerHTML = `<h4>請點選答案 (可複選)</h4>`;
+        const answerOptionsContainer = document.createElement('div');
+        answerOptionsContainer.className = 'tile-group';
+        suitTiles.forEach(tileName => {
+            const img = createTileImage(tileName);
+            img.addEventListener('click', () => img.classList.toggle('selected'));
+            answerOptionsContainer.appendChild(img);
+        });
+        challengeAnswerArea.appendChild(answerOptionsContainer);
+        
+        const submitBtn = document.createElement('button');
+        submitBtn.textContent = '確定答案';
+        submitBtn.onclick = checkChallengeAnswer;
+        challengeAnswerArea.appendChild(submitBtn);
+    }
+
+    function generateChallengeHand(suitTiles, size) {
+        let deck = [];
+        suitTiles.forEach(tile => deck.push(tile, tile, tile, tile));
+        let hand = [];
+        while(hand.length < size && deck.length > 0) {
+            let randIndex = Math.floor(Math.random() * deck.length);
+            hand.push(deck.splice(randIndex, 1)[0]);
+        }
+        return hand;
+    }
+
+    function checkChallengeAnswer() {
+        const selectedTiles = Array.from(document.querySelectorAll('#challenge-answer-area .mahjong-tile.selected')).map(img => img.dataset.tile);
+
+        let isCorrect = false;
+        if (challengeState.mode === 'ting') {
+            isCorrect = selectedTiles.length === challengeState.correctAnswer.length &&
+                        selectedTiles.every(tile => challengeState.correctAnswer.includes(tile));
+        } else {
+            isCorrect = selectedTiles.length === 1 && challengeState.correctAnswer.some(opt => opt.discard === selectedTiles[0]);
+        }
+
+        challengeFeedback.style.display = 'block';
+        if (isCorrect) {
+            challengeFeedback.innerHTML = `<h3 style="color: green;">答對了！</h3>`;
+        } else {
+            challengeFeedback.innerHTML = `<h3 style="color: red;">答錯了！</h3>`;
+        }
+
+        let solutionHtml = '<h4>正確答案：</h4>';
+        if (challengeState.mode === 'ting') {
+            solutionHtml += `<div class="tile-group">${challengeState.correctAnswer.map(createTileImageHtml).join('')}</div>`;
+        } else {
+            challengeState.correctAnswer.forEach(opt => {
+                solutionHtml += `
+                    <div class="result-group">
+                        打 <div class="tile-group">${createTileImageHtml(opt.discard)}</div>
+                        聽 <div class="tile-group">${opt.ting.map(createTileImageHtml).join('')}</div>
+                    </div>`;
+            });
+        }
+        challengeFeedback.innerHTML += solutionHtml;
+        
+        nextChallengeBtn.style.display = 'inline-block';
+        challengeAnswerArea.querySelector('button').disabled = true;
+    }
+
+    // --- 麻將計數器 (邏輯不變，無需修改) ---
+    function setupCounter() {
+        startGameBtn.addEventListener('click', startGame);
+        zimoBtn.addEventListener('click', handleZimo);
+        huBtn.addEventListener('click', handleHu);
+        settleBtn.addEventListener('click', handleSettle);
+    }
+    
+    function getRandomEmoji() {
+        return EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+    }
+
+    function startGame() {
+        const p1Name = document.getElementById('player1-name').value || '東家';
+        const p2Name = document.getElementById('player2-name').value || '南家';
+        const p3Name = document.getElementById('player3-name').value || '西家';
+        const p4Name = document.getElementById('player4-name').value || '北家';
+
+        players = [
+            { id: 1, name: p1Name, score: 0, emoji: getRandomEmoji() },
+            { id: 2, name: p2Name, score: 0, emoji: getRandomEmoji() },
+            { id: 3, name: p3Name, score: 0, emoji: getRandomEmoji() },
+            { id: 4, name: p4Name, score: 0, emoji: getRandomEmoji() }
+        ];
+
+        const stakeValue = document.getElementById('stake-select').value.split('/');
+        stake.base = parseInt(stakeValue[0]);
+        stake.台 = parseInt(stakeValue[1]);
+
+        counterSetup.style.display = 'none';
+        counterMain.style.display = 'block';
+        updateScoreboard();
+    }
+
+    function updateScoreboard() {
+        players.forEach(p => {
+            const box = document.getElementById(`player-display-${p.id}`);
+            box.innerHTML = `
+                <div class="emoji">${p.emoji}</div>
+                <h4>${p.name}</h4>
+                <div class="score ${p.score >= 0 ? 'positive' : 'negative'}">${p.score}</div>
+            `;
+        });
+    }
+
+    function handleZimo() {
+        let content = '<h3>自摸</h3><p>誰自摸？</p><div class="modal-options">';
+        players.forEach(p => { content += `<label><input type="radio" name="winner" value="${p.id}">${p.name}</label>`; });
+        content += '</div><p>誰是莊家？</p><div class="modal-options">';
+        players.forEach(p => { content += `<label><input type="radio" name="dealer" value="${p.id}">${p.name}</label>`; });
+        content += '</div><p>幾台？</p><input type="number" id="tai-input" min="0" value="0" style="width: 100%; padding: 8px;"><button id="confirm-zimo-btn">確定</button>';
+        showModal(content);
+        document.getElementById('confirm-zimo-btn').addEventListener('click', () => {
+            const winnerId = parseInt(document.querySelector('input[name="winner"]:checked')?.value);
+            const dealerId = parseInt(document.querySelector('input[name="dealer"]:checked')?.value);
+            const tai = parseInt(document.getElementById('tai-input').value) || 0;
+            if (!winnerId || !dealerId) { alert('請選擇自摸者和莊家'); return; }
+            let totalTai = tai;
+            if (winnerId === dealerId) totalTai++;
+            let winAmount = 0;
+            players.forEach(p => {
+                if (p.id !== winnerId) {
+                    let payment = stake.base + (totalTai * stake.台);
+                    if(p.id === dealerId) payment += stake.台;
+                    p.score -= payment;
+                    winAmount += payment;
+                }
+            });
+            const winner = players.find(p => p.id === winnerId);
+            winner.score += winAmount;
+            updateScoreboard();
+            closeModal();
+        });
+    }
+
+    function handleHu() {
+        let content = '<h3>胡牌</h3><p>誰胡牌？</p><div class="modal-options">';
+        players.forEach(p => { content += `<label><input type="radio" name="winner" value="${p.id}">${p.name}</label>`; });
+        content += '</div><p>誰放槍？</p><div class="modal-options">';
+        players.forEach(p => { content += `<label><input type="radio" name="loser" value="${p.id}">${p.name}</label>`; });
+        content += '</div><p>幾台？</p><input type="number" id="tai-input" min="0" value="0" style="width: 100%; padding: 8px;"><button id="confirm-hu-btn">確定</button>';
+        showModal(content);
+        document.getElementById('confirm-hu-btn').addEventListener('click', () => {
+            const winnerId = parseInt(document.querySelector('input[name="winner"]:checked')?.value);
+            const loserId = parseInt(document.querySelector('input[name="loser"]:checked')?.value);
+            const tai = parseInt(document.getElementById('tai-input').value) || 0;
+            if (!winnerId || !loserId || winnerId === loserId) { alert('請正確選擇胡牌者和放槍者'); return; }
+            const payment = stake.base + (tai * stake.台);
+            const winner = players.find(p => p.id === winnerId);
+            const loser = players.find(p => p.id === loserId);
+            winner.score += payment;
+            loser.score -= payment;
+            updateScoreboard();
+            closeModal();
+        });
+    }
+    
+    function handleSettle() {
+        let content = '<h3>結算</h3><h4>最終分數</h4>';
+        const finalScores = players.map(p => ({...p}));
+        finalScores.sort((a,b) => b.score - a.score).forEach(p => { content += `<p>${p.name}: ${p.score}</p>`; });
+        content += '<p style="margin-top: 1rem; font-size: 0.9em; color: #666;">注意：此為各玩家總得分。</p><button id="reset-game-btn" style="margin-top: 1rem;">回到設定</button>';
+        showModal(content);
+        document.getElementById('reset-game-btn').addEventListener('click', () => {
+             counterMain.style.display = 'none';
+             counterSetup.style.display = 'block';
+             closeModal();
+        });
+    }
+
+    // --- Modal 控制 ---
+    function setupModal() {
+        closeBtn.addEventListener('click', closeModal);
+        window.addEventListener('click', (event) => { if (event.target === modal) closeModal(); });
+    }
+    function showModal(content) {
+        modalBody.innerHTML = content;
+        modal.style.display = 'block';
+    }
+    function closeModal() {
+        modal.style.display = 'none';
+        modalBody.innerHTML = '';
+    }
+
+    // --- 程式進入點 ---
+    init();
 });

@@ -1,314 +1,341 @@
-/* 基本樣式 */
-body {
-    font-family: 'Helvetica Neue', Arial, sans-serif;
-    background-color: #f0f2f5;
-    color: #333;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    padding: 20px;
-    min-height: 100vh;
-    box-sizing: border-box;
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
+
+:root {
+    --primary-color: #8B4513; /* 咖啡色 */
+    --secondary-color: #F5DEB3; /* 小麥色 */
+    --background-color: #F0F0E0; /* 米白 */
+    --table-color: #006400; /* 深綠色 */
+    --text-color: #333;
+    --white-color: #FFFFFF;
+    --border-radius: 12px;
+    --box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    --transition-speed: 0.3s;
 }
 
-.container {
-    width: 100%;
-    max-width: 900px;
-    background-color: #fff;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    padding: 20px 30px;
+body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
 }
 
 header {
+    background: var(--primary-color);
+    color: var(--white-color);
+    padding: 1rem;
     text-align: center;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 20px;
-    margin-bottom: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
-
-h1 { color: #1a73e8; }
-h2, h3 { color: #444; }
 
 nav {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    flex-wrap: wrap;
+    margin-top: 1rem;
 }
 
-nav button {
-    padding: 10px 20px;
-    border: 1px solid #1a73e8;
-    background-color: #fff;
-    color: #1a73e8;
+.nav-btn {
+    background: none;
+    border: 2px solid var(--secondary-color);
+    color: var(--secondary-color);
+    padding: 0.5rem 1rem;
+    margin: 0 0.5rem;
+    border-radius: var(--border-radius);
     cursor: pointer;
-    font-size: 16px;
-    border-radius: 5px;
-    transition: all 0.3s ease;
+    font-size: 1rem;
+    transition: all var(--transition-speed) ease;
 }
 
-nav button:hover { background-color: #e8f0fe; }
-nav button.active { background-color: #1a73e8; color: #fff; }
+.nav-btn:hover, .nav-btn.active {
+    background: var(--secondary-color);
+    color: var(--primary-color);
+    transform: translateY(-2px);
+}
 
-.view.hidden { display: none; }
-.view.active { display: block; animation: fadeIn 0.5s ease-in-out; }
+main {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.content-section {
+    display: none;
+    animation: fadeIn 0.5s ease;
+}
+
+.content-section.active {
+    display: block;
+}
+
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* 麻將牌樣式 (改為透明背景) */
-.tile-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    min-height: 60px;
+h2 {
+    color: var(--primary-color);
+    border-bottom: 3px solid var(--secondary-color);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* 計算機樣式 */
+#calculator-input-area, .result-area, #challenge-board {
+    background: var(--white-color);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    margin-bottom: 1.5rem;
+}
+
+.hand-display {
+    min-height: 100px;
+    background-color: #e9e9e9;
     padding: 10px;
-    background-color: #e9f5e9;
-    border-radius: 5px;
-    border: 1px solid #c8e6c9;
-    margin-bottom: 15px;
-}
-
-.tile {
-    width: 42px;
-    height: 58px;
-    background-color: transparent;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    user-select: none;
-    opacity: 0;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.3));
-}
-.tile:hover { 
-    transform: scale(1.08); 
-    filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.4));
-}
-
-@keyframes popIn {
-    0% { transform: scale(0.5); opacity: 0; }
-    80% { transform: scale(1.1); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-/* 按鈕 */
-.controls, .trainer-controls {
+    border-radius: 8px;
     display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-    justify-content: center;
     flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 1rem;
+    border: 1px solid #ccc;
 }
 
-.controls button, .trainer-controls button, #trainer-not-ting-btn {
-    padding: 12px 20px;
-    font-size: 16px;
-    border-radius: 5px;
+.hand-display .mahjong-tile {
+    width: 40px; /* 調整為適合顯示的大小 */
+    height: auto;
     cursor: pointer;
-    border: none;
-    color: white;
-    transition: background-color 0.3s ease;
+    transition: transform 0.2s;
 }
 
-#calculate-btn { background-color: #4caf50; }
-#calculate-btn:hover { background-color: #45a049; }
-#clear-btn { background-color: #f44336; }
-#clear-btn:hover { background-color: #d32f2f; }
+.hand-display .mahjong-tile:hover {
+    transform: scale(1.1);
+}
+
+.tile-selection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    gap: 8px;
+    background: var(--white-color);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+}
+
+.tile-selection-grid .mahjong-tile {
+    width: 100%;
+    height: auto;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.tile-selection-grid .mahjong-tile:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+}
+
+.tile-category {
+    grid-column: 1 / -1;
+    font-weight: bold;
+    margin-top: 1rem;
+    color: var(--primary-color);
+}
+
+.calculator-controls, .challenge-options {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    align-items: center;
+}
+
+button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color var(--transition-speed);
+}
+
+button:hover {
+    background-color: #a0522d; /* darken(var(--primary-color), 10%) */
+}
 
 /* 結果顯示 */
-.result-display {
-    background-color: #f8f9fa;
-    border: 1px dashed #ccc;
-    border-radius: 5px;
-    padding: 15px;
-    margin-top: 20px;
-    min-height: 50px;
-    opacity: 0;
-    max-height: 0;
-    overflow: hidden;
-    transition: all 0.5s ease-in-out;
+.result-area h3 {
+    margin-top: 0;
 }
-.result-display.show { opacity: 1; max-height: 500px; margin-bottom: 20px; }
-.result-display p { margin: 5px 0; font-size: 18px; }
-.result-display .tile-group { background-color: transparent; border: none; padding-left: 0; }
-.result-display .hu { color: #d32f2f; font-weight: bold; font-size: 24px; text-align: center; }
-
-/* 牌張選擇區 */
-#tile-palette { display: flex; flex-direction: column; gap: 15px; }
-.suit-group {
+.result-group {
+    margin-bottom: 1rem;
+    animation: slideInUp 0.4s ease;
+}
+@keyframes slideInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.result-group .tile-group {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 8px;
-    background-color: #f7f7f7;
-    border-radius: 5px;
-    border: 1px solid #e0e0e0;
+    gap: 5px;
+    align-items: center;
+}
+.result-group .mahjong-tile {
+    width: 35px;
+    height: auto;
 }
 
 /* 清一色試煉 */
-#trainer-ting-pai-btn, #trainer-da-ting-btn { background-color: #2196F3; }
-#trainer-ting-pai-btn:hover, #trainer-da-ting-btn:hover { background-color: #1976D2; }
-#trainer-new-problem-btn { background-color: #009688; }
-#trainer-new-problem-btn:hover { background-color: #00796B; }
-#trainer-show-answer-btn { background-color: #ff9800; }
-#trainer-show-answer-btn:hover { background-color: #f57c00; }
-#trainer-not-ting-btn { background-color: #607d8b; width: 100%; margin-top: 10px; }
-#trainer-not-ting-btn:hover { background-color: #546e7a; }
-
-#problem-area.hidden { display: none; }
-#trainer-result .correct { color: #388e3c; font-weight: bold; }
-#trainer-result .incorrect { color: #d32f2f; font-weight: bold; }
-#answer-area button:disabled, #answer-area .tile.disabled {
-    pointer-events: none;
-    opacity: 0.6;
-}
-.tile.disabled {
-    cursor: not-allowed;
+.challenge-mode-btn.active {
+    background-color: var(--secondary-color);
+    color: var(--primary-color);
+    font-weight: bold;
 }
 
-
-/* ========= 麻將計數器全新樣式 ========= */
-#counter-setup { text-align: center; }
-.setup-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-    margin: 20px 0;
+#challenge-answer-area {
+    margin-top: 1rem;
 }
-.setup-grid input {
-    padding: 10px;
-    font-size: 16px;
+
+#challenge-answer-area .mahjong-tile {
+    width: 40px;
+    height: auto;
+    cursor: pointer;
+    margin: 2px;
+    border: 2px solid transparent;
+    border-radius: 4px;
+}
+#challenge-answer-area .mahjong-tile.selected {
+    border-color: #ff4500;
+}
+
+/* 計數器樣式 */
+.player-setup, .stake-setup {
+    margin-bottom: 1rem;
+}
+.player-setup input {
+    padding: 8px;
+    margin-right: 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
 }
-.stakes-selection { margin-bottom: 20px; }
-#stakes-select { padding: 10px; font-size: 16px; }
-#start-game-btn {
-    padding: 12px 30px;
-    font-size: 18px;
-    background-color: #1a73e8;
-    color: white;
-    border: none;
+#stake-select {
+    padding: 8px;
     border-radius: 5px;
-    cursor: pointer;
 }
-#start-game-btn:hover{ background-color: #155ab6; }
 
-#counter-main {
-    width: 100%;
-    max-width: 600px;
-    margin: 20px auto;
-}
-#mahjong-table {
+.mahjong-table {
     position: relative;
-    width: 100%;
-    padding-top: 100%;
-    background-color: #2e7d32;
-    border: 10px solid #8d6e63;
-    border-radius: 5%;
-    box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    width: 600px;
+    height: 600px;
+    background-color: var(--table-color);
+    border: 20px solid var(--primary-color);
+    border-radius: 30px;
+    margin: 2rem auto;
+    box-shadow: var(--box-shadow);
 }
 
-.player-pod {
+.player-box {
     position: absolute;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 10px;
-    background: rgba(255,255,255,0.85);
-    border-radius: 8px;
-    transform: translate(-50%, -50%);
-    min-width: 120px;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 1rem;
+    border-radius: var(--border-radius);
     text-align: center;
+    width: 180px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    transition: all var(--transition-speed) ease;
 }
-.player-top { top: 5%; left: 50%; }
-.player-bottom { top: 95%; left: 50%; }
-.player-left { top: 50%; left: 5%; transform: translate(-50%, -50%) rotate(90deg); }
-.player-right { top: 50%; left: 95%; transform: translate(-50%, -50%) rotate(-90deg); }
+.player-box h4 {
+    margin: 0 0 10px 0;
+    font-size: 1.5rem;
+}
+.player-box .emoji {
+    font-size: 2rem;
+    margin-bottom: 5px;
+}
+.player-box .score {
+    font-size: 1.8rem;
+    font-weight: bold;
+}
+.player-box .score.positive { color: green; }
+.player-box .score.negative { color: red; }
 
-.player-emoji { font-size: 24px; }
-.player-name { font-weight: bold; }
-.player-score { font-size: 20px; font-weight: bold; }
-.player-score.positive { color: #c62828; }
-.player-score.negative { color: #2e7d32; }
+.player-box.top { top: -40px; left: 50%; transform: translateX(-50%); }
+.player-box.right { right: -40px; top: 50%; transform: translateY(-50%); }
+.player-box.bottom { bottom: -40px; left: 50%; transform: translateX(-50%); }
+.player-box.left { left: -40px; top: 50%; transform: translateY(-50%); }
 
-.table-center-controls {
+.table-center {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     display: flex;
-    gap: 10px;
+    flex-direction: column;
+    gap: 1rem;
 }
-.table-center-controls button {
-    padding: 10px 15px;
-    font-size: 18px;
-    border-radius: 50%;
-    width: 70px;
-    height: 70px;
-    border: 3px solid #fff;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.4);
-}
-#btn-zimo { background-color: #1e88e5; color: white; }
-#btn-hupai { background-color: #e53935; color: white; }
-#btn-settle { background-color: #43a047; color: white; }
 
-/* 彈出視窗 Modal */
-.modal-overlay {
+/* Modal 彈出視窗 */
+.modal {
+    display: none;
     position: fixed;
-    top: 0;
+    z-index: 1000;
     left: 0;
+    top: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+    animation: fadeIn 0.3s;
 }
+
 .modal-content {
-    background: white;
-    padding: 20px 30px;
-    border-radius: 10px;
-    width: 90%;
-    max-width: 400px;
+    background-color: #fefefe;
+    margin: 10% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    animation: slideInDown 0.4s;
+}
+
+@keyframes slideInDown {
+    from { transform: translateY(-50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.close-btn {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close-btn:hover,
+.close-btn:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+#modal-body {
+    padding: 1rem;
+}
+#modal-body h3 {
     text-align: center;
 }
-.player-select-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+.modal-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+.modal-options label {
+    display: flex;
+    align-items: center;
     gap: 10px;
-    margin: 10px 0;
 }
-.player-select-grid button {
-    padding: 10px;
-    border: 1px solid #ccc;
-    background: #f7f7f7;
-    cursor: pointer;
-    border-radius: 5px;
+.modal-options button {
+    margin-top: 1rem;
+    width: 100%;
 }
-.player-select-grid button.selected {
-    background: #1a73e8;
-    color: white;
-    border-color: #1a73e8;
-}
-.tai-input { margin: 20px 0; }
-.tai-input input { width: 60px; text-align: center; font-size: 16px; padding: 5px; }
-.modal-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
-.modal-buttons button { padding: 10px 20px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; }
-#modal-confirm-btn { background-color: #4caf50; color: white; }
-#modal-cancel-btn, #settle-close-btn { background-color: #f44336; color: white; }
-
-#settle-details p {
-    font-size: 18px;
-    padding: 8px;
-    border-bottom: 1px solid #eee;
-    text-align: left;
-}
-#settle-details p:last-child { border-bottom: none; }

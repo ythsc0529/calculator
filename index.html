@@ -3,148 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台灣麻將聽牌/計數器</title>
+    <title>麻將工具箱</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>台灣麻將聽牌/計數器</h1>
-            <nav>
-                <button id="show-calculator" class="active">聽牌計算機</button>
-                <button id="show-trainer">清一色試煉</button>
-                <button id="show-counter">麻將計數器</button>
-            </nav>
-        </header>
 
-        <main id="calculator" class="view active">
-            <div class="hand-display-area">
-                <h2>你的手牌 (點擊下方牌張來加入)</h2>
-                <div id="my-hand" class="tile-group"></div>
-                <div class="controls">
+    <header>
+        <h1>麻將工具箱</h1>
+        <nav>
+            <button id="nav-calculator" class="nav-btn active">聽牌/打聽計算機</button>
+            <button id="nav-challenge" class="nav-btn">清一色試煉</button>
+            <button id="nav-counter" class="nav-btn">麻將計數器</button>
+        </nav>
+    </header>
+
+    <main>
+        <div id="calculator-section" class="content-section active">
+            <h2>聽牌/打聽計算機</h2>
+            <div id="calculator-input-area">
+                <p>請點擊下方的麻將牌來輸入您的手牌（最多17張）</p>
+                <div id="user-hand" class="hand-display"></div>
+                <div class="calculator-controls">
                     <button id="calculate-btn">計算</button>
-                    <button id="clear-btn">清空</button>
+                    <button id="clear-hand-btn">清除</button>
                 </div>
             </div>
-            <div id="result-area" class="result-display"></div>
-            <div class="tile-palette-area">
-                <h2>牌張選擇區</h2>
-                <div id="tile-palette">
-                    <div class="suit-group" id="palette-m"></div>
-                    <div class="suit-group" id="palette-p"></div>
-                    <div class="suit-group" id="palette-s"></div>
-                    <div class="suit-group" id="palette-z"></div>
+            <div id="calculator-result-area" class="result-area">
                 </div>
-            </div>
-        </main>
+            <div id="tile-selection" class="tile-selection-grid">
+                </div>
+        </div>
 
-        <main id="trainer" class="view hidden">
-            <div class="trainer-controls">
-                <button id="trainer-da-ting-btn">練習打聽</button>
-                <button id="trainer-ting-pai-btn">練習聽牌</button>
-                <button id="trainer-new-problem-btn">再出一題</button>
-                <button id="trainer-show-answer-btn">看解答</button>
+        <div id="challenge-section" class="content-section">
+            <h2>清一色試煉</h2>
+            <div class="challenge-options">
+                <span>模式選擇：</span>
+                <button id="challenge-ting-btn" class="challenge-mode-btn" data-mode="ting">練習聽牌</button>
+                <button id="challenge-da-ting-btn" class="challenge-mode-btn" data-mode="da-ting">練習打聽</button>
             </div>
-            <div id="problem-area" class="hidden">
-                <h2>題目：(模式: <span id="trainer-mode-display"></span>)</h2>
-                <div id="problem-hand" class="tile-group"></div>
-                <h3>你的答案是？</h3>
-                <div id="answer-area">
-                    <div id="answer-options" class="tile-group"></div>
-                    <button id="trainer-not-ting-btn">還未聽牌</button>
-                </div>
-                <div id="trainer-result" class="result-display"></div>
+            <div id="challenge-board">
+                <p id="challenge-question"></p>
+                <div id="challenge-hand" class="hand-display"></div>
+                <div id="challenge-answer-area">
+                    </div>
+                <div id="challenge-feedback" class="result-area"></div>
+                <button id="next-challenge-btn" style="display: none;">下一題</button>
             </div>
-        </main>
+        </div>
 
-        <main id="counter" class="view hidden">
+        <div id="counter-section" class="content-section">
+            <h2>麻將計數器</h2>
             <div id="counter-setup">
-                <h2>遊戲設定</h2>
-                <div class="setup-grid">
-                    <input type="text" id="player-name-1" placeholder="東方玩家姓名" value="玩家一">
-                    <input type="text" id="player-name-2" placeholder="南方玩家姓名" value="玩家二">
-                    <input type="text" id="player-name-3" placeholder="西方玩家姓名" value="玩家三">
-                    <input type="text" id="player-name-4" placeholder="北方玩家姓名" value="玩家四">
+                <div class="player-setup">
+                    <input type="text" id="player1-name" placeholder="東方玩家名">
+                    <input type="text" id="player2-name" placeholder="南方玩家名">
+                    <input type="text" id="player3-name" placeholder="西方玩家名">
+                    <input type="text" id="player4-name" placeholder="北方玩家名">
                 </div>
-                <div class="stakes-selection">
-                    <h3>選擇籌碼 (底/台)</h3>
-                    <select id="stakes-select">
+                <div class="stake-setup">
+                    <span>籌碼選擇：</span>
+                    <select id="stake-select">
                         <option value="1/1">1 / 1</option>
                         <option value="3/1">3 / 1</option>
-                        <option value="5/2" selected>5 / 2</option>
+                        <option value="5/2">5 / 2</option>
                         <option value="10/2">10 / 2</option>
                         <option value="10/5">10 / 5</option>
                     </select>
                 </div>
                 <button id="start-game-btn">開始計分</button>
             </div>
-            <div id="counter-main" class="hidden">
-                <div id="mahjong-table">
-                    <div id="player-1" class="player-pod player-bottom">
-                        <span class="player-emoji"></span>
-                        <span class="player-name"></span>
-                        <span class="player-score"></span>
-                    </div>
-                    <div id="player-2" class="player-pod player-left">
-                        <span class="player-emoji"></span>
-                        <span class="player-name"></span>
-                        <span class="player-score"></span>
-                    </div>
-                    <div id="player-3" class="player-pod player-top">
-                        <span class="player-emoji"></span>
-                        <span class="player-name"></span>
-                        <span class="player-score"></span>
-                    </div>
-                    <div id="player-4" class="player-pod player-right">
-                        <span class="player-emoji"></span>
-                        <span class="player-name"></span>
-                        <span class="player-score"></span>
-                    </div>
-                    <div class="table-center-controls">
-                        <button id="btn-zimo">自摸</button>
-                        <button id="btn-hupai">胡牌</button>
-                        <button id="btn-settle">結算</button>
+
+            <div id="counter-main" style="display: none;">
+                <div class="mahjong-table">
+                    <div id="player-display-1" class="player-box top"></div>
+                    <div id="player-display-2" class="player-box right"></div>
+                    <div id="player-display-3" class="player-box bottom"></div>
+                    <div id="player-display-4" class="player-box left"></div>
+
+                    <div class="table-center">
+                        <button id="zimo-btn">自摸</button>
+                        <button id="hu-btn">胡牌</button>
+                        <button id="settle-btn">結算</button>
                     </div>
                 </div>
             </div>
-        </main>
+        </div>
+    </main>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <div id="modal-body">
+                </div>
+        </div>
     </div>
 
-    <div id="scoring-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <h3 id="modal-title">紀錄分數</h3>
-            <div id="zimo-section" class="hidden">
-                <p>誰自摸？</p>
-                <div id="zimo-winner-select" class="player-select-grid"></div>
-                <p>誰是莊家？</p>
-                <div id="zimo-dealer-select" class="player-select-grid"></div>
-            </div>
-            <div id="hupai-section" class="hidden">
-                <p>誰胡牌？</p>
-                <div id="hupai-winner-select" class="player-select-grid"></div>
-                <p>誰放槍？</p>
-                <div id="hupai-loser-select" class="player-select-grid"></div>
-            </div>
-            <div class="tai-input">
-                <label for="tai-count">幾台？</label>
-                <input type="number" id="tai-count" min="0" value="1">
-            </div>
-            <div class="modal-buttons">
-                <button id="modal-confirm-btn">確定</button>
-                <button id="modal-cancel-btn">取消</button>
-            </div>
-        </div>
-    </div>
-    <div id="settle-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <h3>結算結果</h3>
-            <div id="settle-details"></div>
-            <div class="modal-buttons">
-                <button id="settle-close-btn">關閉</button>
-            </div>
-        </div>
-    </div>
-    
     <script src="script.js"></script>
 </body>
 </html>
