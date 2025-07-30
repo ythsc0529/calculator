@@ -319,9 +319,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function getRandomEmoji() { return EMOJIS[Math.floor(Math.random() * EMOJIS.length)]; }
     function startGame() {
         const p1Name = document.getElementById('player1-name').value || '東家';
-        const p2Name = document.getElementById('player2-name').value || '南家';
+        const p2Name = document.getElementById('player2-name').value || '北家';
         const p3Name = document.getElementById('player3-name').value || '西家';
-        const p4Name = document.getElementById('player4-name').value || '北家';
+        const p4Name = document.getElementById('player4-name').value || '南家';
         players = [ { id: 1, name: p1Name, score: 0, emoji: getRandomEmoji() }, { id: 2, name: p2Name, score: 0, emoji: getRandomEmoji() }, { id: 3, name: p3Name, score: 0, emoji: getRandomEmoji() }, { id: 4, name: p4Name, score: 0, emoji: getRandomEmoji() } ];
         const stakeValue = document.getElementById('stake-select').value.split('/');
         stake.base = parseInt(stakeValue[0]); stake.台 = parseInt(stakeValue[1]);
