@@ -7,6 +7,7 @@
     --table-color: #006400; /* 深綠色 */
     --text-color: #333;
     --white-color: #FFFFFF;
+    --disabled-color: #aaaaaa;
     --border-radius: 12px;
     --box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     --transition-speed: 0.3s;
@@ -27,6 +28,21 @@ header {
     padding: 1rem;
     text-align: center;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    position: relative; /* 為了定位設定按鈕 */
+}
+
+/* 新增設定按鈕樣式 */
+.settings-icon {
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    font-size: 1.8rem;
+    cursor: pointer;
+    transition: transform var(--transition-speed) ease;
+}
+.settings-icon:hover {
+    transform: translateY(-50%) rotate(45deg);
 }
 
 nav {
@@ -71,14 +87,17 @@ main {
     to { opacity: 1; transform: translateY(0); }
 }
 
-h2 {
+h2, h3 {
     color: var(--primary-color);
+}
+
+h2 {
     border-bottom: 3px solid var(--secondary-color);
     padding-bottom: 0.5rem;
     margin-bottom: 1.5rem;
 }
 
-/* 計算機樣式 */
+/* 計算機 & 試煉通用樣式 */
 #calculator-input-area, .result-area, #challenge-board {
     background: var(--white-color);
     padding: 1.5rem;
@@ -100,7 +119,7 @@ h2 {
 }
 
 .hand-display .mahjong-tile {
-    width: 40px; /* 調整為適合顯示的大小 */
+    width: 40px;
     height: auto;
     cursor: pointer;
     transition: transform 0.2s;
@@ -163,7 +182,7 @@ button:hover {
 }
 
 /* 結果顯示 */
-.result-area h3 {
+.result-area h3, .result-area h4 {
     margin-top: 0;
 }
 .result-group {
@@ -178,8 +197,11 @@ button:hover {
     display: flex;
     gap: 5px;
     align-items: center;
+    flex-wrap: wrap;
 }
-.result-group .mahjong-tile {
+
+/* **修正** 清一色試煉與計算機結果的牌大小 */
+.result-group .mahjong-tile, #challenge-feedback .mahjong-tile {
     width: 35px;
     height: auto;
 }
@@ -190,152 +212,88 @@ button:hover {
     color: var(--primary-color);
     font-weight: bold;
 }
-
-#challenge-answer-area {
-    margin-top: 1rem;
-}
-
+#challenge-answer-area { margin-top: 1rem; }
 #challenge-answer-area .mahjong-tile {
-    width: 40px;
-    height: auto;
-    cursor: pointer;
-    margin: 2px;
-    border: 2px solid transparent;
-    border-radius: 4px;
+    width: 40px; height: auto; cursor: pointer; margin: 2px;
+    border: 2px solid transparent; border-radius: 4px;
 }
-#challenge-answer-area .mahjong-tile.selected {
-    border-color: #ff4500;
-}
+#challenge-answer-area .mahjong-tile.selected { border-color: #ff4500; }
 
 /* 計數器樣式 */
-.player-setup, .stake-setup {
-    margin-bottom: 1rem;
-}
-.player-setup input {
-    padding: 8px;
-    margin-right: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-}
-#stake-select {
-    padding: 8px;
-    border-radius: 5px;
-}
-
-.mahjong-table {
-    position: relative;
-    width: 600px;
-    height: 600px;
-    background-color: var(--table-color);
-    border: 20px solid var(--primary-color);
-    border-radius: 30px;
-    margin: 2rem auto;
-    box-shadow: var(--box-shadow);
-}
-
-.player-box {
-    position: absolute;
-    background-color: rgba(255, 255, 255, 0.9);
-    padding: 1rem;
-    border-radius: var(--border-radius);
-    text-align: center;
-    width: 180px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    transition: all var(--transition-speed) ease;
-}
-.player-box h4 {
-    margin: 0 0 10px 0;
-    font-size: 1.5rem;
-}
-.player-box .emoji {
-    font-size: 2rem;
-    margin-bottom: 5px;
-}
-.player-box .score {
-    font-size: 1.8rem;
-    font-weight: bold;
-}
+.player-setup, .stake-setup { margin-bottom: 1rem; }
+.player-setup input, #stake-select { padding: 8px; border: 1px solid #ccc; border-radius: 5px; margin-right: 10px; }
+.mahjong-table { position: relative; width: 600px; height: 600px; background-color: var(--table-color); border: 20px solid var(--primary-color); border-radius: 30px; margin: 2rem auto; box-shadow: var(--box-shadow); }
+.player-box { position: absolute; background-color: rgba(255, 255, 255, 0.9); padding: 1rem; border-radius: var(--border-radius); text-align: center; width: 180px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); transition: all var(--transition-speed) ease; }
+.player-box h4 { margin: 0 0 10px 0; font-size: 1.5rem; }
+.player-box .emoji { font-size: 2rem; margin-bottom: 5px; }
+.player-box .score { font-size: 1.8rem; font-weight: bold; }
 .player-box .score.positive { color: green; }
 .player-box .score.negative { color: red; }
-
 .player-box.top { top: -40px; left: 50%; transform: translateX(-50%); }
 .player-box.right { right: -40px; top: 50%; transform: translateY(-50%); }
 .player-box.bottom { bottom: -40px; left: 50%; transform: translateX(-50%); }
 .player-box.left { left: -40px; top: 50%; transform: translateY(-50%); }
-
-.table-center {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
+.table-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; gap: 1rem; }
 
 /* Modal 彈出視窗 */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.5);
-    animation: fadeIn 0.3s;
-}
+.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); animation: fadeIn 0.3s; }
+.modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: var(--border-radius); box-shadow: 0 10px 30px rgba(0,0,0,0.3); animation: slideInDown 0.4s; position: relative; }
+@keyframes slideInDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.close-btn { color: #aaa; position: absolute; top: 10px; right: 20px; font-size: 28px; font-weight: bold; }
+.close-btn:hover, .close-btn:focus { color: black; text-decoration: none; cursor: pointer; }
+#modal-body { padding: 1rem; }
+#modal-body h3 { text-align: center; }
+.modal-options { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
+.modal-options label { display: flex; align-items: center; gap: 10px; }
+.modal-options button { margin-top: 1rem; width: 100%; }
 
-.modal-content {
-    background-color: #fefefe;
-    margin: 10% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
-    max-width: 500px;
-    border-radius: var(--border-radius);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    animation: slideInDown 0.4s;
-}
-
-@keyframes slideInDown {
-    from { transform: translateY(-50px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-.close-btn {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-}
-
-.close-btn:hover,
-.close-btn:focus {
-    color: black;
-    text-decoration: none;
-    cursor: pointer;
-}
-
-#modal-body {
-    padding: 1rem;
-}
-#modal-body h3 {
-    text-align: center;
-}
-.modal-options {
+/* 新增設定選單樣式 */
+.settings-menu {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1px;
+    background-color: #ddd;
+    border-radius: 8px;
+    overflow: hidden;
     margin-top: 1rem;
 }
-.modal-options label {
+.settings-item {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 10px;
+    padding: 15px;
+    background-color: var(--white-color);
+    cursor: pointer;
+    transition: background-color var(--transition-speed);
 }
-.modal-options button {
-    margin-top: 1rem;
-    width: 100%;
+.settings-item:hover {
+    background-color: #f0f0f0;
+}
+.settings-item.disabled {
+    color: var(--disabled-color);
+    cursor: not-allowed;
+    background-color: #f9f9f9;
+}
+.settings-item.disabled:hover {
+    background-color: #f9f9f9;
+}
+.settings-item span:last-child {
+    color: var(--disabled-color);
+}
+.settings-item #theme-color-picker {
+    border: none;
+    background: none;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    padding: 0;
+}
+/* 隱私權政策內文樣式 */
+#privacy-policy-content {
+    text-align: left;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+#privacy-policy-content h4 {
+    margin-top: 1.5rem;
 }

@@ -15,6 +15,7 @@
             <button id="nav-challenge" class="nav-btn">清一色試煉</button>
             <button id="nav-counter" class="nav-btn">麻將計數器</button>
         </nav>
+        <div id="settings-btn" class="settings-icon">⚙️</div>
     </header>
 
     <main>
@@ -56,9 +57,9 @@
             <div id="counter-setup">
                 <div class="player-setup">
                     <input type="text" id="player1-name" placeholder="東方玩家名">
-                    <input type="text" id="player2-name" placeholder="北方玩家名">
+                    <input type="text" id="player2-name" placeholder="南方玩家名">
                     <input type="text" id="player3-name" placeholder="西方玩家名">
-                    <input type="text" id="player4-name" placeholder="南方玩家名">
+                    <input type="text" id="player4-name" placeholder="北方玩家名">
                 </div>
                 <div class="stake-setup">
                     <span>籌碼選擇：</span>
@@ -95,6 +96,31 @@
             <span class="close-btn">&times;</span>
             <div id="modal-body">
                 </div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3>設定</h3>
+            <div id="settings-body" class="settings-menu">
+                <div class="settings-item disabled" id="taishu-table-btn">
+                    <span>台數表</span>
+                    <span>(即將推出)</span>
+                </div>
+                 <div class="settings-item disabled" id="baotai-rules-btn">
+                    <span>包台行為</span>
+                    <span>(即將推出)</span>
+                </div>
+                <div class="settings-item">
+                    <span>自訂主題</span>
+                    <input type="color" id="theme-color-picker">
+                </div>
+                <div class="settings-item" id="privacy-policy-btn">
+                    <span>隱私權政策</span>
+                    <span>&gt;</span>
+                </div>
+            </div>
         </div>
     </div>
 
