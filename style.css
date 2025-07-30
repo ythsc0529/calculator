@@ -28,10 +28,9 @@ header {
     padding: 1rem;
     text-align: center;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    position: relative; /* 為了定位設定按鈕 */
+    position: relative;
 }
 
-/* 新增設定按鈕樣式 */
 .settings-icon {
     position: absolute;
     top: 50%;
@@ -200,7 +199,6 @@ button:hover {
     flex-wrap: wrap;
 }
 
-/* **修正** 清一色試煉與計算機結果的牌大小 */
 .result-group .mahjong-tile, #challenge-feedback .mahjong-tile {
     width: 35px;
     height: auto;
@@ -237,63 +235,29 @@ button:hover {
 
 /* Modal 彈出視窗 */
 .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); animation: fadeIn 0.3s; }
-.modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: var(--border-radius); box-shadow: 0 10px 30px rgba(0,0,0,0.3); animation: slideInDown 0.4s; position: relative; }
+.modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: var(--border-radius); box-shadow: 0 10px 30px rgba(0,0,0,0.3); animation: slideInDown 0.4s; position: relative; }
 @keyframes slideInDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 .close-btn { color: #aaa; position: absolute; top: 10px; right: 20px; font-size: 28px; font-weight: bold; }
 .close-btn:hover, .close-btn:focus { color: black; text-decoration: none; cursor: pointer; }
-#modal-body { padding: 1rem; }
+#modal-body { padding: 1rem; max-height: 70vh; overflow-y: auto;}
 #modal-body h3 { text-align: center; }
 .modal-options { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
 .modal-options label { display: flex; align-items: center; gap: 10px; }
 .modal-options button { margin-top: 1rem; width: 100%; }
 
-/* 新增設定選單樣式 */
-.settings-menu {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    background-color: #ddd;
-    border-radius: 8px;
-    overflow: hidden;
-    margin-top: 1rem;
-}
-.settings-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px;
-    background-color: var(--white-color);
-    cursor: pointer;
-    transition: background-color var(--transition-speed);
-}
-.settings-item:hover {
-    background-color: #f0f0f0;
-}
-.settings-item.disabled {
-    color: var(--disabled-color);
-    cursor: not-allowed;
-    background-color: #f9f9f9;
-}
-.settings-item.disabled:hover {
-    background-color: #f9f9f9;
-}
-.settings-item span:last-child {
-    color: var(--disabled-color);
-}
-.settings-item #theme-color-picker {
-    border: none;
-    background: none;
-    width: 40px;
-    height: 40px;
-    cursor: pointer;
-    padding: 0;
-}
-/* 隱私權政策內文樣式 */
-#privacy-policy-content {
-    text-align: left;
-    max-height: 60vh;
-    overflow-y: auto;
-}
-#privacy-policy-content h4 {
-    margin-top: 1.5rem;
-}
+/* 新增台數表和隱私權政策的內文樣式 */
+.modal-text-content { text-align: left; }
+.modal-text-content h4 { margin-top: 1.5rem; margin-bottom: 0.8rem; border-left: 4px solid var(--primary-color); padding-left: 10px; }
+.modal-text-content ul { list-style-type: none; padding-left: 0; }
+.modal-text-content li { margin-bottom: 1rem; line-height: 1.7; }
+.modal-text-content strong { color: var(--primary-color); }
+.modal-text-content .disclaimer { text-align: center; font-style: italic; color: #666; margin-top: 2rem; }
+
+/* 設定選單樣式 */
+.settings-menu { display: flex; flex-direction: column; gap: 1px; background-color: #ddd; border-radius: 8px; overflow: hidden; margin-top: 1rem; }
+.settings-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background-color: var(--white-color); cursor: pointer; transition: background-color var(--transition-speed); }
+.settings-item:hover { background-color: #f0f0f0; }
+.settings-item.disabled { color: var(--disabled-color); cursor: not-allowed; background-color: #f9f9f9; }
+.settings-item.disabled:hover { background-color: #f9f9f9; }
+.settings-item span:last-child { color: var(--disabled-color); }
+.settings-item #theme-color-picker { border: none; background: none; width: 40px; height: 40px; cursor: pointer; padding: 0; }
