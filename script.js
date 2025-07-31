@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let players = [];
     let stake = { base: 0, 台: 0 };
     let challengeState = {};
+    let summonCooldownTimer = null;
 
     // --- DOM 元素 ---
     const navButtons = document.querySelectorAll('.nav-btn');
@@ -44,7 +45,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const themeColorPicker = document.getElementById('theme-color-picker');
     const privacyPolicyBtn = document.getElementById('privacy-policy-btn');
     const taishuTableBtn = document.getElementById('taishu-table-btn');
-    const baopaiRulesBtn = document.getElementById('baopai-rules-btn'); // 新增包牌按鈕
+    const baopaiRulesBtn = document.getElementById('baopai-rules-btn');
+    const diceContainer = document.getElementById('dice-container');
+    const rollDiceBtn = document.getElementById('roll-dice-btn');
+    const diceResultArea = document.getElementById('dice-result-area');
+    const luckyColorEl = document.getElementById('lucky-color');
+    const wealthIndexEl = document.getElementById('wealth-index');
+    const benefactorTilesEl = document.getElementById('benefactor-tiles');
+    const summonBtn = document.getElementById('summon-btn');
+    const summonResultEl = document.getElementById('summon-result');
+    const block1 = document.getElementById('block-1');
+    const block2 = document.getElementById('block-2');
 
     // --- 初始化函數 ---
     function init() {
@@ -52,6 +63,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setupCalculator();
         setupChallenge();
         setupCounter();
+        setupDice();
+        setupFortune();
         setupModals();
         setupSettings();
     }
@@ -79,11 +92,9 @@ document.addEventListener('DOMContentLoaded', () => {
         img.dataset.tile = tileName;
         return img;
     }
-
     function createTileImageHtml(tileName) {
         return `<img src="images/${tileName}.svg" alt="${tileName}" class="mahjong-tile">`;
     }
-
     function sortHand(hand) {
         return hand.slice().sort((a, b) => ALL_TILES.indexOf(a) - ALL_TILES.indexOf(b));
     }
@@ -104,21 +115,18 @@ document.addEventListener('DOMContentLoaded', () => {
         clearHandBtn.addEventListener('click', clearHand);
         calculateBtn.addEventListener('click', calculateHand);
     }
-    
     function addTileToHand(tileName) {
         if (userHand.length >= 17) { alert('手牌最多17張'); return; }
         if (userHand.filter(t => t === tileName).length >= 4) { alert(`"${tileName}" 已經有4張了`); return; }
         userHand.push(tileName);
         renderUserHand();
     }
-
     function removeTileFromHand(index) {
         const sorted = sortHand(userHand);
         const originalIndex = userHand.indexOf(sorted[index]);
         if (originalIndex > -1) { userHand.splice(originalIndex, 1); }
         renderUserHand();
     }
-    
     function renderUserHand() {
         userHandDisplay.innerHTML = '';
         const sorted = sortHand(userHand);
@@ -128,14 +136,12 @@ document.addEventListener('DOMContentLoaded', () => {
             userHandDisplay.appendChild(img);
         });
     }
-
     function clearHand() {
         userHand = [];
         renderUserHand();
         calculatorResultArea.innerHTML = '';
         calculatorResultArea.style.display = 'none';
     }
-
     function calculateHand() {
         calculatorResultArea.innerHTML = '';
         calculatorResultArea.style.display = 'block';
@@ -172,7 +178,6 @@ document.addEventListener('DOMContentLoaded', () => {
         hand.forEach(t => counts[t]++);
         return counts;
     }
-    
     function isWinningHand(counts, depth = 0) {
         if (Object.values(counts).every(c => c === 0)) return true;
         if (depth === 0) {
@@ -208,7 +213,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return false;
         }
     }
-    
     function findTing(hand) {
         const ting = new Set();
         const handCounts = getHandCounts(hand);
@@ -220,7 +224,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return sortHand(Array.from(ting));
     }
-    
     function findDiscardToTing(hand) {
         const options = [];
         const uniqueTiles = Array.from(new Set(hand));
@@ -379,108 +382,210 @@ document.addEventListener('DOMContentLoaded', () => {
             updateScoreboard(); closeModal(mainModal);
         });
     }
+
+    // --- **更新**：結算功能 ---
     function handleSettle() {
-        let content = '<h3>結算</h3><h4>最終分數</h4>';
-        const finalScores = [...players].sort((a,b) => b.score - a.score);
-        finalScores.forEach(p => { content += `<p>${p.name}: ${p.score}</p>`; });
-        content += '<p style="margin-top: 1rem; font-size: 0.9em; color: #666;">注意：此為各玩家總得分。</p><button id="reset-game-btn" style="margin-top: 1rem;">回到設定</button>';
+        let content = '<h3>結算</h3>';
+        
+        // 1. 顯示最終分數
+        content += '<h4>最終分數</h4>';
+        const finalScores = [...players].sort((a, b) => b.score - a.score);
+        finalScores.forEach(p => {
+            content += `<p>${p.name}: <span class="score ${p.score >= 0 ? 'positive' : 'negative'}">${p.score}</span></p>`;
+        });
+
+        // 2. 計算並顯示點數流向
+        content += '<div class="settlement-details">';
+        content += '<h4>點數流向</h4>';
+        
+        const transactions = calculateTransactions();
+        
+        if (transactions.length === 0) {
+            content += '<p>天下太平，無須找錢！</p>';
+        } else {
+            content += '<ul class="transaction-list">';
+            transactions.forEach(t => {
+                content += `
+                    <li>
+                        <span class="player-name">${t.from}</span>
+                        <span class="transaction-arrow"> → </span>
+                        <span class="player-name">${t.to}</span>
+                        <span class="transaction-amount">${t.amount} 點</span>
+                    </li>`;
+            });
+            content += '</ul>';
+        }
+        content += '</div>';
+
+        content += '<button id="reset-game-btn" style="margin-top: 1rem;">新的一將</button>';
         showModal(mainModal, content);
+        
         document.getElementById('reset-game-btn').addEventListener('click', () => {
-             counterMain.style.display = 'none'; counterSetup.style.display = 'block'; closeModal(mainModal);
+             counterMain.style.display = 'none';
+             counterSetup.style.display = 'block';
+             closeModal(mainModal);
         });
     }
 
-    // --- Modal 控制 ---
-    function setupModals() {
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.querySelector('.close-btn').addEventListener('click', () => closeModal(modal));
-            window.addEventListener('click', (event) => { if (event.target === modal) closeModal(modal); });
-        });
-    }
-    function showModal(modal, content = null) {
-        if (content) {
-            modal.querySelector('#modal-body').innerHTML = content;
+    function calculateTransactions() {
+        let winners = players.filter(p => p.score > 0).map(p => ({ ...p })).sort((a, b) => b.score - a.score);
+        let losers = players.filter(p => p.score < 0).map(p => ({ ...p, score: -p.score })).sort((a, b) => b.score - a.score);
+        let transactions = [];
+
+        let i = 0, j = 0;
+        while (i < losers.length && j < winners.length) {
+            const loser = losers[i];
+            const winner = winners[j];
+            const amount = Math.min(loser.score, winner.score);
+
+            if (amount > 0) {
+                 transactions.push({ from: loser.name, to: winner.name, amount: amount });
+                 loser.score -= amount;
+                 winner.score -= amount;
+            }
+
+            if (loser.score === 0) i++;
+            if (winner.score === 0) j++;
         }
-        modal.style.display = 'block';
-    }
-    function closeModal(modal) {
-        modal.style.display = 'none';
-        if (modal.id === 'modal') {
-            mainModalBody.innerHTML = '';
-        }
+        return transactions;
     }
 
-    // --- 設定功能 ---
-    function setupSettings() {
-        settingsBtn.addEventListener('click', () => showModal(settingsModal));
-        const savedColor = localStorage.getItem('themeColor') || '#8B4513';
-        document.documentElement.style.setProperty('--primary-color', savedColor);
-        themeColorPicker.value = savedColor;
-        themeColorPicker.addEventListener('input', (e) => {
-            const newColor = e.target.value;
-            document.documentElement.style.setProperty('--primary-color', newColor);
-            localStorage.setItem('themeColor', newColor);
+    // --- 麻將骰子 ---
+    function setupDice(){rollDiceBtn.addEventListener("click",rollTheDice)}
+    function rollTheDice(){
+        const diceElements = diceContainer.querySelectorAll(".dice");
+        let diceValues = [];
+        let total = 0;
+        diceElements.forEach(die => die.classList.add('rolling'));
+        setTimeout(() => {
+            diceElements.forEach(die => {
+                const value = Math.floor(Math.random() * 6) + 1;
+                diceValues.push(value);
+                total += value;
+                die.textContent = value;
+                die.classList.remove('rolling');
+            });
+            const resultHTML = getDiceResultText(total);
+            diceResultArea.innerHTML = resultHTML;
+        }, 500);
+    }
+    function getDiceResultText(total) {
+        let result = `<h4>總計：${total} 點</h4>`;
+        let location = '', action = '';
+        switch (total) {
+            case 3: location = '對家'; action = '數 <strong>3</strong> 敦抓牌'; break;
+            case 4: location = '上家'; action = '數 <strong>4</strong> 敦抓牌'; break;
+            case 5: location = '自己'; action = '數 <strong>5</strong> 敦抓牌'; break;
+            case 6: location = '下家'; action = '數 <strong>6</strong> 敦抓牌'; break;
+            case 7: location = '對家'; action = '數 <strong>7</strong> 敦抓牌'; break;
+            case 8: location = '上家'; action = '數 <strong>8</strong> 敦抓牌'; break;
+            case 9: location = '自己'; action = '從尾巴倒數，抓完剩 <strong>6</strong> 敦'; break;
+            case 10: location = '下家'; action = '從尾巴倒數，抓完剩 <strong>5</strong> 敦'; break;
+            case 11: location = '對家'; action = '從尾巴倒數，抓完剩 <strong>4</strong> 敦'; break;
+            case 12: location = '上家'; action = '從尾巴倒數，抓完剩 <strong>3</strong> 敦'; break;
+            case 13: location = '自己'; action = '從尾巴倒數，抓完剩 <strong>2</strong> 敦'; break;
+            case 14: location = '下家'; action = '從尾巴倒數，抓完剩 <strong>1</strong> 敦'; break;
+            case 15: location = '對家'; action = '從尾巴倒數，抓完牌堆'; break;
+            case 16: location = '上家'; action = '從尾巴倒數，抓 <strong>1</strong> 敦，再抓下一排的 <strong>1</strong> 敦'; break;
+            case 17: location = '自己'; action = '從尾巴倒數，直接抓下一排的第 <strong>1</strong> 敦'; break;
+            case 18: location = '下家'; action = '從尾巴倒數，下一排數 <strong>1</strong> 敦抓牌'; break;
+        }
+        result += `<p>開門位置：<strong>${location}</strong></p><p>抓牌方式：${action}</p>`;
+        return result;
+    }
+
+    // --- 招財神 ---
+    function setupFortune() {
+        handleDailyFortune();
+        handleSummoningRitual();
+    }
+    function handleDailyFortune() {
+        const today = new Date().toLocaleDateString();
+        const storedFortune = JSON.parse(localStorage.getItem('dailyFortune'));
+        if (storedFortune && storedFortune.date === today) {
+            displayFortune(storedFortune);
+        } else {
+            const newFortune = generateNewFortune(today);
+            localStorage.setItem('dailyFortune', JSON.stringify(newFortune));
+            displayFortune(newFortune);
+        }
+    }
+    function generateNewFortune(date) {
+        const colors = ['#FF4500', '#FFD700', '#32CD32', '#1E90FF', '#9932CC', '#FF1493'];
+        const luckyColor = colors[Math.floor(Math.random() * colors.length)];
+        const wealthIndex = Math.floor(Math.random() * 5) + 1;
+        let tile1Index = Math.floor(Math.random() * ALL_TILES.length);
+        let tile2Index;
+        do { tile2Index = Math.floor(Math.random() * ALL_TILES.length); } while (tile1Index === tile2Index);
+        const benefactorTiles = [ALL_TILES[tile1Index], ALL_TILES[tile2Index]];
+        return { date, luckyColor, wealthIndex, benefactorTiles };
+    }
+    function displayFortune(fortune) {
+        luckyColorEl.style.backgroundColor = fortune.luckyColor;
+        wealthIndexEl.textContent = '★'.repeat(fortune.wealthIndex) + '☆'.repeat(5 - fortune.wealthIndex);
+        benefactorTilesEl.innerHTML = '';
+        fortune.benefactorTiles.forEach(tileName => {
+            benefactorTilesEl.appendChild(createTileImage(tileName));
         });
-        privacyPolicyBtn.addEventListener('click', showPrivacyPolicy);
-        taishuTableBtn.addEventListener('click', showTaishuTable);
-        baopaiRulesBtn.addEventListener('click', showBaopaiRules); // 綁定包牌事件
+    }
+    function handleSummoningRitual() {
+        summonBtn.addEventListener('click', performRitual);
+        checkCooldown();
+    }
+    function checkCooldown() {
+        const cooldownEnd = localStorage.getItem('summonCooldownEnd');
+        if (!cooldownEnd || Date.now() > cooldownEnd) {
+            summonBtn.disabled = false;
+            summonResultEl.innerHTML = '準備好就可擲筊！';
+            if (summonCooldownTimer) clearInterval(summonCooldownTimer);
+            return false;
+        }
+        summonBtn.disabled = true;
+        const updateTimer = () => {
+            const remaining = cooldownEnd - Date.now();
+            if (remaining <= 0) {
+                clearInterval(summonCooldownTimer);
+                checkCooldown();
+                return;
+            }
+            const hours = Math.floor(remaining / 3600000);
+            const minutes = Math.floor((remaining % 3600000) / 60000);
+            const seconds = Math.floor((remaining % 60000) / 1000);
+            summonResultEl.innerHTML = `財神爺休息中... 請於 <strong style="color:red;">${hours}時 ${minutes}分 ${seconds}秒</strong> 後再來`;
+        };
+        updateTimer();
+        summonCooldownTimer = setInterval(updateTimer, 1000);
+        return true;
+    }
+    function performRitual() {
+        if (checkCooldown()) return;
+        block1.classList.add('tossing');
+        block2.classList.add('tossing');
+        summonBtn.disabled = true;
+        summonResultEl.textContent = '...誠心祈求中...';
+        setTimeout(() => {
+            block1.classList.remove('tossing');
+            block2.classList.remove('tossing');
+            const outcome = Math.random();
+            if (outcome < 0.35) {
+                summonResultEl.innerHTML = '<strong style="color:var(--gold-color);">聖筊！財神爺已賜福！今日牌運亨通！</strong>';
+                document.querySelector('.god-of-wealth').classList.add('success-glow');
+                setTimeout(() => document.querySelector('.god-of-wealth').classList.remove('success-glow'), 1500);
+                summonBtn.disabled = false;
+            } else if (outcome < 0.75) {
+                summonResultEl.innerHTML = '<strong style="color:blue;">笑筊。</strong>財神爺笑而不語，您可以立即再試一次。';
+                summonBtn.disabled = false;
+            } else {
+                summonResultEl.innerHTML = '<strong style="color:red;">陰筊！</strong>財神爺今日有事，請稍後再來...';
+                const cooldownEnd = Date.now() + 3 * 60 * 60 * 1000;
+                localStorage.setItem('summonCooldownEnd', cooldownEnd);
+                checkCooldown();
+            }
+        }, 700);
     }
     
-    function showTaishuTable() {
-        closeModal(settingsModal);
-        const tableHTML = `
-            <div class="modal-text-content">
-                <h3>台灣麻將台數表 (南部台)</h3>
-                <p style="text-align:center; color:#555;">此台數以南部台為準 (無花台且見字一台)</p>
-                <h4>1台</h4><ul><li><strong>莊家：</strong>胡牌玩家為莊家時，加1台。</li><li><strong>連莊、拉莊：</strong>莊家胡牌或流局即可連莊。每連1次，額外加1台(連莊)，其餘三家也要多付1台(拉莊)，俗稱「連N拉N」。</li><li><strong>門清：</strong>胡牌時，手牌無任何吃、碰、明槓。</li><li><strong>不求人：</strong>門清狀態下，胡牌的牌為自摸。通常會與門清、自摸合併計算，稱為「門清一摸三」。</li><li><strong>自摸：</strong>胡牌的牌由自己摸進，三家皆需支付。</li><li><strong>搶槓：</strong>聽牌時，胡走別人加槓的牌 (僅限明槓補牌)。</li><li><strong>見字：</strong>手中有任一「東、南、西、北、中、發、白」的刻子(三張同牌)。每組1台。</li><li><strong>槓上開花：</strong>因開槓補牌而自摸胡牌。</li><li><strong>海底撈月：</strong>牌牆最後一張牌自摸胡牌。</li></ul>
-                <h4>2台</h4><ul><li><strong>平胡：</strong>牌型由5組順子及1組對子組成，手牌無字牌，且非自摸、獨聽、單吊胡牌，必須是聽雙面(兩面聽)。</li><li><strong>全求人：</strong>手牌皆為吃、碰、槓，只剩最後一張牌單吊胡別人。</li><li><strong>三暗刻：</strong>手中有三組自己摸進的刻子(非碰牌形成)。</li></ul>
-                <h4>4台</h4><ul><li><strong>碰碰胡：</strong>牌型由5組刻子及1組對子組成。</li><li><strong>小三元：</strong>「中、發、白」三種牌，其中兩種為刻子，一種為對子。</li><li><strong>湊一色(混一色)：</strong>牌型由字牌及「萬、筒、條」其中一種花色組成。</li></ul>
-                <h4>5台</h4><ul><li><strong>四暗刻：</strong>手中有四組自己摸進的刻子。</li></ul>
-                <h4>8台</h4><ul><li><strong>MIGI (咪幾/立直)：</strong>在開局前8張牌內即聽牌，且過程中無人吃碰槓。需在摸牌後宣告，若無宣告則不計。</li><li><strong>五暗刻：</strong>手中有五組自己摸進的刻子。</li><li><strong>大三元：</strong>「中、發、白」三種牌皆為刻子。</li><li><strong>小四喜：</strong>「東、南、西、北」四種牌，其中三種為刻子，一種為對子。</li><li><strong>清一色：</strong>整副牌由「萬、筒、條」其中一種花色組成，無字牌。</li><li><strong>字一色：</strong>整副牌全由字牌組成。可與大小三元、大小四喜的台數疊加計算。</li></ul>
-                <h4>16台</h4><ul><li><strong>天胡：</strong>莊家取完牌後立即胡牌。不另計門清、不求人、自摸、MIGI等台數。</li><li><strong>大四喜：</strong>「東、南、西、北」四種牌皆為刻子。</li></ul>
-                <p class="disclaimer">麻將僅供娛樂，朋友講好就好，嚴禁賭博。</p>
-            </div>
-        `;
-        showModal(mainModal, tableHTML);
-    }
-
-    function showPrivacyPolicy() {
-        closeModal(settingsModal);
-        const policyHTML = `
-            <div class="modal-text-content" id="privacy-policy-content">
-                <h3>隱私權政策</h3><p><strong>最後更新日期：${new Date().getFullYear()}年${new Date().getMonth() + 1}月${new Date().getDate()}日</strong></p><p>感謝您使用「麻將工具箱」。我們非常重視您的隱私權。本應用程式為完全客戶端應用，意即所有的計算與資料都只在您的瀏覽器中進行，我們不會收集、儲存或傳輸您的任何個人資訊。</p>
-                <h4>資訊收集</h4><p>本應用程式**不會**收集以下任何資訊：</p><ul><li>您在「麻將計數器」中輸入的玩家名稱。</li><li>您的分數、籌碼設定或任何遊戲紀錄。</li><li>您在「聽牌計算機」中輸入的任何牌型。</li><li>您的 IP 位址、地理位置或任何裝置資訊。</li></ul>
-                <h4>本機儲存 (Local Storage)</h4><p>為了提升您的使用體驗，我們可能會使用您瀏覽器的「本機儲存」功能來儲存非個人的設定資訊，例如您選擇的「自訂主題」顏色。這些資訊只會儲存在您自己的電腦或行動裝置上，我們無法存取，且您可以隨時透過清除瀏覽器快取來刪除這些資料。</p>
-                <h4>Cookies</h4><p>本網站不使用任何追蹤性 Cookies。</p><p class="disclaimer">本工具僅供娛樂與學習交流，請勿用於任何形式的賭博行為。</p>
-            </div>
-        `;
-        showModal(mainModal, policyHTML);
-    }
-
-    // --- 新增：顯示包牌行為 ---
-    function showBaopaiRules() {
-        closeModal(settingsModal);
-        const rulesHTML = `
-            <div class="modal-text-content">
-                <h3>包牌行為 (詐胡)</h3>
-                <p style="text-align:center; color:#555;"><strong>朋友事先講好即可，底下僅為常見標準。<br>若發生包牌或詐胡行為，行為人應賠償三家。</strong></p>
-                <ol>
-                    <li><strong>錯胡 (詐胡)：</strong>未聽牌或牌型不符胡牌條件卻逕行倒牌。</li>
-                    <li><strong>相公倒牌：</strong>已相公 (手牌數不對) 卻倒牌胡牌。</li>
-                    <li><strong>過水不胡：</strong>在同一巡內，放棄了可以胡的牌，之後在輪到自己摸牌前，若他家打出同一張牌而胡牌，視為包牌。(此條款爭議多，需事先溝通)</li>
-                    <li><strong>明槓上家/指定牌：</strong>因明槓上家打出的第四張牌，而導致他家胡牌時，可能構成包牌。</li>
-                    <li><strong>相公後操作：</strong>已相公狀態下，進行吃、碰、槓等動作。</li>
-                    <li><strong>二次相公：</strong>在同局內已相公，卻因錯誤操作導致再次相公。</li>
-                    <li><strong>不合規定的自摸：</strong>自摸時出現如搓牌未即時翻牌、碰觸手牌、牌掉落等不合程序的行為。</li>
-                    <li><strong>牌牆不整 (斷橋)：</strong>手牌未正常排列，導致牌面倒塌或混亂。</li>
-                    <li><strong>MIGI / 眼牌後過水：</strong>宣告MIGI(立直)或眼牌後，對可胡的牌過水不胡。</li>
-                    <li><strong>明槓後自摸包牌：</strong>部分規則中，若因明槓而補牌自摸，該明槓的提供者需負擔包牌責任。(此條爭議大，需事先約定)</li>
-                </ol>
-                <p class="disclaimer">所有規則應以牌友間的約定為最終準則。</p>
-            </div>
-        `;
-        showModal(mainModal, rulesHTML);
-    }
+    // --- Modal 與 設定 ---
+    function setupModals(){document.querySelectorAll(".modal").forEach(e=>{e.querySelector(".close-btn").addEventListener("click",()=>closeModal(e)),window.addEventListener("click",t=>{t.target===e&&closeModal(e)})})}function showModal(e,t=null){t&&(e.querySelector("#modal-body").innerHTML=t),e.style.display="block"}function closeModal(e){e.style.display="none","modal"===e.id&&(mainModalBody.innerHTML="")}function setupSettings(){settingsBtn.addEventListener("click",()=>showModal(settingsModal));const e=localStorage.getItem("themeColor")||"#8B4513";document.documentElement.style.setProperty("--primary-color",e),themeColorPicker.value=e,themeColorPicker.addEventListener("input",e=>{const t=e.target.value;document.documentElement.style.setProperty("--primary-color",t),localStorage.setItem("themeColor",t)}),privacyPolicyBtn.addEventListener("click",showPrivacyPolicy),taishuTableBtn.addEventListener("click",showTaishuTable),baopaiRulesBtn.addEventListener("click",showBaopaiRules)}function showTaishuTable(){closeModal(settingsModal);const e=`\n            <div class="modal-text-content">\n                <h3>台灣麻將台數表 (南部台)</h3>\n                <p style="text-align:center; color:#555;">此台數以南部台為準 (無花台且見字一台)</p>\n                <h4>1台</h4><ul><li><strong>莊家：</strong>胡牌玩家為莊家時，加1台。</li><li><strong>連莊、拉莊：</strong>莊家胡牌或流局即可連莊。每連1次，額外加1台(連莊)，多付1台(拉莊)，俗稱「連N拉N」。</li><li><strong>門清：</strong>胡牌時，手牌無任何吃、碰、明槓。</li><li><strong>不求人：</strong>門清狀態下，胡牌的牌為自摸。通常會與門清、自摸合併計算，稱為「門清一摸三」。</li><li><strong>自摸：</strong>胡牌的牌由自己摸進，三家皆需支付。</li><li><strong>搶槓：</strong>聽牌時，胡走別人加槓的牌 (僅限明槓補牌)。</li><li><strong>見字：</strong>手中有任一「東、南、西、北、中、發、白」的刻子(三張同牌)。每組1台。</li><li><strong>槓上開花：</strong>因開槓補牌而自摸胡牌。</li><li><strong>海底撈月：</strong>牌牆最後一張牌自摸胡牌。</li></ul>\n                <h4>2台</h4><ul><li><strong>平胡：</strong>牌型由5組順子及1組對子組成，手牌無字牌，且非自摸、獨聽、單吊胡牌，必須是聽雙面(兩面聽)。</li><li><strong>全求人：</strong>手牌皆為吃、碰、槓，只剩最後一張牌單吊胡別人。</li><li><strong>三暗刻：</strong>手中有三組自己摸進的刻子(非碰牌形成)。</li></ul>\n                <h4>4台</h4><ul><li><strong>碰碰胡：</strong>牌型由5組刻子及1組對子組成。</li><li><strong>小三元：</strong>「中、發、白」三種牌，其中兩種為刻子，一種為對子。</li><li><strong>湊一色(混一色)：</strong>牌型由字牌及「萬、筒、條」其中一種花色組成。</li></ul>\n                <h4>5台</h4><ul><li><strong>四暗刻：</strong>手中有四組自己摸進的刻子。</li></ul>\n                <h4>8台</h4><ul><li><strong>MIGI (咪幾/立直)：</strong>在開局前8張牌內即聽牌，且過程中無人吃碰槓。需在摸牌後宣告，若無宣告則不計。</li><li><strong>五暗刻：</strong>手中有五組自己摸進的刻子。</li><li><strong>大三元：</strong>「中、發、白」三種牌皆為刻子。</li><li><strong>小四喜：</strong>「東、南、西、北」四種牌，其中三種為刻子，一種為對子。</li><li><strong>清一色：</strong>整副牌由「萬、筒、條」其中一種花色組成，無字牌。</li><li><strong>字一色：</strong>整副牌全由字牌組成。可與大小三元、大小四喜的台數疊加計算。</li></ul>\n                <h4>16台</h4><ul><li><strong>天胡：</strong>莊家取完牌後立即胡牌。不另計門清、不求人、自摸、MIGI等台數。</li><li><strong>大四喜：</strong>「東、南、西、北」四種牌皆為刻子。</li></ul>\n                <p class="disclaimer">麻將僅供娛樂，朋友講好就好，嚴禁賭博。</p>\n            </div>\n        `;showModal(mainModal,e)}function showPrivacyPolicy(){closeModal(settingsModal);const e=`\n            <div class="modal-text-content" id="privacy-policy-content">\n                <h3>隱私權政策</h3><p><strong>最後更新日期：2025年7月31日</strong></p><p>感謝您使用「麻將工具箱」。我們非常重視您的隱私權。本應用程式為完全客戶端應用，意即所有的計算與資料都只在您的瀏覽器中進行，我們不會收集、儲存或傳輸您的任何個人資訊。</p>\n                <h4>資訊收集</h4><p>本應用程式**不會**收集以下任何資訊：</p><ul><li>您在「麻將計數器」中輸入的玩家名稱。</li><li>您的分數、籌碼設定或任何遊戲紀錄。</li><li>您在「聽牌計算機」中輸入的任何牌型。</li><li>您的 IP 位址、地理位置或任何裝置資訊。</li></ul>\n                <h4>本機儲存 (Local Storage)</h4><p>為了提升您的使用體驗，我們可能會使用您瀏覽器的「本機儲存」功能來儲存非個人的設定資訊，例如您選擇的「自訂主題」顏色。這些資訊只會儲存在您自己的電腦或行動裝置上，我們無法存取，且您可以隨時透過清除瀏覽器快取來刪除這些資料。</p>\n                <h4>Cookies</h4><p>本網站不使用任何追蹤性 Cookies。</p><p class="disclaimer">本工具僅供娛樂與學習交流，請勿用於任何形式的賭博行為。</p>\n            </div>\n        `;showModal(mainModal,e)}function showBaopaiRules(){closeModal(settingsModal);const e=`\n            <div class="modal-text-content">\n                <h3>包牌行為 (詐胡)</h3>\n                <p style="text-align:center; color:#555;"><strong>朋友事先講好即可，底下僅為常見標準。<br>若發生包牌或詐胡行為，行為人應賠償三家。</strong></p>\n                <ol>\n                    <li><strong>錯胡 (詐胡)：</strong>未聽牌或牌型不符胡牌條件卻逕行倒牌。</li>\n                    <li><strong>相公倒牌：</strong>已相公 (手牌數不對) 卻倒牌胡牌。</li>\n                    <li><strong>過水不胡：</strong>在同一巡內，放棄了可以胡的牌，之後在輪到自己摸牌前，若他家打出同一張牌而胡牌，視為包牌。(此條款爭議多，需事先溝通)</li>\n                    <li><strong>明槓上家：</strong>明槓上家打出的第四張牌，可能構成包牌。</li>\n                    <li><strong>相公後操作：</strong>已相公狀態下，進行吃、碰、槓等動作。</li>\n                    <li><strong>二次相公：</strong>在同局內已相公，卻因錯誤操作導致再次相公。</li>\n                    <li><strong>不合規定的自摸：</strong>自摸時出現如搓牌未即時翻牌、碰觸手牌、牌掉落等不合程序的行為。</li>\n                    <li><strong>牌牆不整 (斷橋)：</strong>手牌未正常排列，導致牌面倒塌或混亂。</li>\n                    <li><strong>MIGI / 眼牌後過水：</strong>宣告MIGI(立直)或眼牌後，對可胡的牌過水不胡。</li>\n                    <li><strong>明槓後自摸包牌：</strong>部分規則中，若因明槓而補牌自摸，該明槓的提供者需負擔包牌責任。(此條爭議大，需事先約定)</li>\n                </ol>\n                <p class="disclaimer">所有規則應以牌友間的約定為最終準則。</p>\n            </div>\n        `;showModal(mainModal,e)}
 
     // --- 程式進入點 ---
     init();

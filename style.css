@@ -8,216 +8,48 @@
     --text-color: #333;
     --white-color: #FFFFFF;
     --disabled-color: #aaaaaa;
+    --gold-color: #FFD700;
     --border-radius: 12px;
     --box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     --transition-speed: 0.3s;
 }
 
-body {
-    font-family: 'Noto Sans TC', sans-serif;
-    background-color: var(--background-color);
-    color: var(--text-color);
-    margin: 0;
-    padding: 0;
-    line-height: 1.6;
-}
-
-header {
-    background: var(--primary-color);
-    color: var(--white-color);
-    padding: 1rem;
-    text-align: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    position: relative;
-}
-
-.settings-icon {
-    position: absolute;
-    top: 50%;
-    right: 20px;
-    transform: translateY(-50%);
-    font-size: 1.8rem;
-    cursor: pointer;
-    transition: transform var(--transition-speed) ease;
-}
-.settings-icon:hover {
-    transform: translateY(-50%) rotate(45deg);
-}
-
-nav {
-    margin-top: 1rem;
-}
-
-.nav-btn {
-    background: none;
-    border: 2px solid var(--secondary-color);
-    color: var(--secondary-color);
-    padding: 0.5rem 1rem;
-    margin: 0 0.5rem;
-    border-radius: var(--border-radius);
-    cursor: pointer;
-    font-size: 1rem;
-    transition: all var(--transition-speed) ease;
-}
-
-.nav-btn:hover, .nav-btn.active {
-    background: var(--secondary-color);
-    color: var(--primary-color);
-    transform: translateY(-2px);
-}
-
-main {
-    padding: 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.content-section {
-    display: none;
-    animation: fadeIn 0.5s ease;
-}
-
-.content-section.active {
-    display: block;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-h2, h3 {
-    color: var(--primary-color);
-}
-
-h2 {
-    border-bottom: 3px solid var(--secondary-color);
-    padding-bottom: 0.5rem;
-    margin-bottom: 1.5rem;
-}
-
-/* 計算機 & 試煉通用樣式 */
-#calculator-input-area, .result-area, #challenge-board {
-    background: var(--white-color);
-    padding: 1.5rem;
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-    margin-bottom: 1.5rem;
-}
-
-.hand-display {
-    min-height: 100px;
-    background-color: #e9e9e9;
-    padding: 10px;
-    border-radius: 8px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    margin-bottom: 1rem;
-    border: 1px solid #ccc;
-}
-
-.hand-display .mahjong-tile {
-    width: 40px;
-    height: auto;
-    cursor: pointer;
-    transition: transform 0.2s;
-}
-
-.hand-display .mahjong-tile:hover {
-    transform: scale(1.1);
-}
-
-.tile-selection-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-    gap: 8px;
-    background: var(--white-color);
-    padding: 1rem;
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-}
-
-.tile-selection-grid .mahjong-tile {
-    width: 100%;
-    height: auto;
-    cursor: pointer;
-    border-radius: 5px;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.tile-selection-grid .mahjong-tile:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 5px 10px rgba(0,0,0,0.2);
-}
-
-.tile-category {
-    grid-column: 1 / -1;
-    font-weight: bold;
-    margin-top: 1rem;
-    color: var(--primary-color);
-}
-
-.calculator-controls, .challenge-options {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
-    align-items: center;
-}
-
-button {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: background-color var(--transition-speed);
-}
-
-button:hover {
-    background-color: #a0522d; /* darken(var(--primary-color), 10%) */
-}
-
-/* 結果顯示 */
-.result-area h3, .result-area h4 {
-    margin-top: 0;
-}
-.result-group {
-    margin-bottom: 1rem;
-    animation: slideInUp 0.4s ease;
-}
-@keyframes slideInUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-.result-group .tile-group {
-    display: flex;
-    gap: 5px;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.result-group .mahjong-tile, #challenge-feedback .mahjong-tile {
-    width: 35px;
-    height: auto;
-}
-
-/* 清一色試煉 */
-.challenge-mode-btn.active {
-    background-color: var(--secondary-color);
-    color: var(--primary-color);
-    font-weight: bold;
-}
+body { font-family: 'Noto Sans TC', sans-serif; background-color: var(--background-color); color: var(--text-color); margin: 0; padding: 0; line-height: 1.6; }
+header { background: var(--primary-color); color: var(--white-color); padding: 1rem; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); position: relative; }
+.settings-icon { position: absolute; top: 50%; right: 20px; transform: translateY(-50%); font-size: 1.8rem; cursor: pointer; transition: transform var(--transition-speed) ease; }
+.settings-icon:hover { transform: translateY(-50%) rotate(45deg); }
+nav { margin-top: 1rem; display: flex; justify-content: center; flex-wrap: wrap; gap: 0.5rem; }
+.nav-btn { background: none; border: 2px solid var(--secondary-color); color: var(--secondary-color); padding: 0.5rem 1rem; margin: 0 0.5rem; border-radius: var(--border-radius); cursor: pointer; font-size: 1rem; transition: all var(--transition-speed) ease; }
+.nav-btn:hover, .nav-btn.active { background: var(--secondary-color); color: var(--primary-color); transform: translateY(-2px); }
+main { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+.content-section { display: none; animation: fadeIn 0.5s ease; }
+.content-section.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+h2, h3 { color: var(--primary-color); }
+h2 { border-bottom: 3px solid var(--secondary-color); padding-bottom: 0.5rem; margin-bottom: 1.5rem; }
+#calculator-input-area, .result-area, #challenge-board { background: var(--white-color); padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--box-shadow); margin-bottom: 1.5rem; }
+.hand-display { min-height: 70px; background-color: #e9e9e9; padding: 10px; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 1rem; border: 1px solid #ccc; }
+.hand-display .mahjong-tile { width: 40px; height: auto; cursor: pointer; transition: transform 0.2s; }
+.hand-display.small { min-height: auto; padding: 5px; display: inline-flex; vertical-align: middle; }
+.hand-display.small .mahjong-tile { width: 35px; }
+.hand-display .mahjong-tile:hover { transform: scale(1.1); }
+.tile-selection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 8px; background: var(--white-color); padding: 1rem; border-radius: var(--border-radius); box-shadow: var(--box-shadow); }
+.tile-selection-grid .mahjong-tile { width: 100%; height: auto; cursor: pointer; border-radius: 5px; transition: transform 0.2s, box-shadow 0.2s; }
+.tile-selection-grid .mahjong-tile:hover { transform: translateY(-5px); box-shadow: 0 5px 10px rgba(0,0,0,0.2); }
+.tile-category { grid-column: 1 / -1; font-weight: bold; margin-top: 1rem; color: var(--primary-color); }
+.calculator-controls, .challenge-options { display: flex; gap: 1rem; margin-bottom: 1rem; align-items: center; }
+button { background-color: var(--primary-color); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 1rem; transition: background-color var(--transition-speed); }
+button:hover { background-color: #a0522d; }
+button:disabled { background-color: #ccc; cursor: not-allowed; }
+.result-area h3, .result-area h4 { margin-top: 0; }
+.result-group { margin-bottom: 1rem; animation: slideInUp 0.4s ease; }
+@keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.result-group .tile-group { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+.result-group .mahjong-tile, #challenge-feedback .mahjong-tile { width: 35px; height: auto; }
+.challenge-mode-btn.active { background-color: var(--secondary-color); color: var(--primary-color); font-weight: bold; }
 #challenge-answer-area { margin-top: 1rem; }
-#challenge-answer-area .mahjong-tile {
-    width: 40px; height: auto; cursor: pointer; margin: 2px;
-    border: 2px solid transparent; border-radius: 4px;
-}
+#challenge-answer-area .mahjong-tile { width: 40px; height: auto; cursor: pointer; margin: 2px; border: 2px solid transparent; border-radius: 4px; }
 #challenge-answer-area .mahjong-tile.selected { border-color: #ff4500; }
-
-/* 計數器樣式 */
 .player-setup, .stake-setup { margin-bottom: 1rem; }
 .player-setup input, #stake-select { padding: 8px; border: 1px solid #ccc; border-radius: 5px; margin-right: 10px; }
 .mahjong-table { position: relative; width: 600px; height: 600px; background-color: var(--table-color); border: 20px solid var(--primary-color); border-radius: 30px; margin: 2rem auto; box-shadow: var(--box-shadow); }
@@ -232,32 +64,71 @@ button:hover {
 .player-box.bottom { bottom: -40px; left: 50%; transform: translateX(-50%); }
 .player-box.left { left: -40px; top: 50%; transform: translateY(-50%); }
 .table-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; gap: 1rem; }
-
-/* Modal 彈出視窗 */
 .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); animation: fadeIn 0.3s; }
 .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: var(--border-radius); box-shadow: 0 10px 30px rgba(0,0,0,0.3); animation: slideInDown 0.4s; position: relative; }
 @keyframes slideInDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-.close-btn { color: #aaa; position: absolute; top: 10px; right: 20px; font-size: 28px; font-weight: bold; }
-.close-btn:hover, .close-btn:focus { color: black; text-decoration: none; cursor: pointer; }
+.close-btn { color: #aaa; position: absolute; top: 10px; right: 20px; font-size: 28px; font-weight: bold; cursor: pointer; }
 #modal-body { padding: 1rem; max-height: 70vh; overflow-y: auto;}
 #modal-body h3 { text-align: center; }
 .modal-options { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
 .modal-options label { display: flex; align-items: center; gap: 10px; }
 .modal-options button { margin-top: 1rem; width: 100%; }
-
-/* 台數表和隱私權政策的內文樣式 */
 .modal-text-content { text-align: left; }
 .modal-text-content h4 { margin-top: 1.5rem; margin-bottom: 0.8rem; border-left: 4px solid var(--primary-color); padding-left: 10px; }
 .modal-text-content ul, .modal-text-content ol { list-style-position: inside; padding-left: 5px; }
 .modal-text-content li { margin-bottom: 1rem; line-height: 1.7; }
 .modal-text-content strong { color: var(--primary-color); }
 .modal-text-content .disclaimer { text-align: center; font-style: italic; color: #666; margin-top: 2rem; }
-
-/* 設定選單樣式 */
 .settings-menu { display: flex; flex-direction: column; gap: 1px; background-color: #ddd; border-radius: 8px; overflow: hidden; margin-top: 1rem; }
 .settings-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background-color: var(--white-color); cursor: pointer; transition: background-color var(--transition-speed); }
 .settings-item:hover { background-color: #f0f0f0; }
 .settings-item.disabled { color: var(--disabled-color); cursor: not-allowed; background-color: #f9f9f9; }
-.settings-item.disabled:hover { background-color: #f9f9f9; }
 .settings-item span:last-child { color: var(--disabled-color); }
 .settings-item #theme-color-picker { border: none; background: none; width: 40px; height: 40px; cursor: pointer; padding: 0; }
+.dice-roller-container { text-align: center; padding: 2rem; background: var(--white-color); border-radius: var(--border-radius); box-shadow: var(--box-shadow); }
+.dice-container { display: flex; justify-content: center; gap: 20px; margin-bottom: 2rem; }
+.dice { width: 80px; height: 80px; background-color: #fff; border: 2px solid var(--primary-color); border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 2.5rem; font-weight: bold; color: var(--primary-color); box-shadow: 3px 3px 5px rgba(0,0,0,0.2); }
+#roll-dice-btn { padding: 12px 30px; font-size: 1.2rem; margin-bottom: 1rem; }
+#dice-result-area h4 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+#dice-result-area p { font-size: 1.2rem; margin: 0.5rem 0; }
+#dice-result-area strong { color: #D2691E; font-size: 1.3em; }
+.dice.rolling { animation: roll-animation 0.5s ease-in-out; }
+@keyframes roll-animation { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.2); } 100% { transform: rotate(360deg) scale(1); } }
+.fortune-card, .summon-altar { background: var(--white-color); padding: 1.5rem 2rem; border-radius: var(--border-radius); box-shadow: var(--box-shadow); margin-bottom: 2rem; text-align: center; }
+.fortune-item { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.2rem; margin-bottom: 1rem; }
+.fortune-label { font-weight: bold; color: var(--primary-color); }
+#lucky-color { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #ccc; }
+#wealth-index { color: var(--gold-color); font-size: 1.5rem; }
+.god-of-wealth { font-size: 5rem; animation: float-god 3s ease-in-out infinite; }
+@keyframes float-god { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.summon-altar #summon-btn { font-size: 1.2rem; padding: 12px 30px; margin-top: 1.5rem; }
+.summon-result-area { margin-top: 1.5rem; font-size: 1.2rem; font-weight: bold; min-height: 50px; }
+.divination-blocks-container { display: flex; justify-content: center; gap: 10px; margin-top: 1rem; height: 50px; }
+.block { width: 30px; height: 50px; background-color: #d33; border-radius: 25px / 30px; border: 2px solid #8b0000; position: relative; }
+.block.tossing { animation: toss-animation 0.7s ease-out; }
+@keyframes toss-animation { 0% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-50px) rotate(180deg); } 100% { transform: translateY(0) rotate(360deg); } }
+.success-glow { animation: gold-glow 1.5s ease-in-out; }
+@keyframes gold-glow { 0% { box-shadow: 0 0 5px #fff; } 50% { box-shadow: 0 0 30px var(--gold-color), 0 0 40px var(--gold-color); } 100% { box-shadow: 0 0 5px #fff; } }
+
+/* 新增結算明細樣式 */
+.settlement-details { margin-top: 1rem; text-align: left; }
+.transaction-list { list-style: none; padding: 0; }
+.transaction-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    font-size: 1.2rem;
+}
+.transaction-arrow {
+    font-weight: bold;
+    color: var(--primary-color);
+}
+.transaction-amount {
+    font-weight: bold;
+    background-color: var(--secondary-color);
+    color: var(--primary-color);
+    padding: 2px 8px;
+    border-radius: 5px;
+}

@@ -14,6 +14,8 @@
             <button id="nav-calculator" class="nav-btn active">聽牌/打聽計算機</button>
             <button id="nav-challenge" class="nav-btn">清一色試煉</button>
             <button id="nav-counter" class="nav-btn">麻將計數器</button>
+            <button id="nav-dice" class="nav-btn">麻將骰子</button>
+            <button id="nav-fortune" class="nav-btn">招財神</button>
         </nav>
         <div id="settings-btn" class="settings-icon">⚙️</div>
     </header>
@@ -29,10 +31,8 @@
                     <button id="clear-hand-btn">清除</button>
                 </div>
             </div>
-            <div id="calculator-result-area" class="result-area">
-                </div>
-            <div id="tile-selection" class="tile-selection-grid">
-                </div>
+            <div id="calculator-result-area" class="result-area"></div>
+            <div id="tile-selection" class="tile-selection-grid"></div>
         </div>
 
         <div id="challenge-section" class="content-section">
@@ -45,8 +45,7 @@
             <div id="challenge-board">
                 <p id="challenge-question"></p>
                 <div id="challenge-hand" class="hand-display"></div>
-                <div id="challenge-answer-area">
-                    </div>
+                <div id="challenge-answer-area"></div>
                 <div id="challenge-feedback" class="result-area"></div>
                 <button id="next-challenge-btn" style="display: none;">下一題</button>
             </div>
@@ -73,14 +72,12 @@
                 </div>
                 <button id="start-game-btn">開始計分</button>
             </div>
-
             <div id="counter-main" style="display: none;">
                 <div class="mahjong-table">
                     <div id="player-display-1" class="player-box top"></div>
                     <div id="player-display-2" class="player-box right"></div>
                     <div id="player-display-3" class="player-box bottom"></div>
                     <div id="player-display-4" class="player-box left"></div>
-
                     <div class="table-center">
                         <button id="zimo-btn">自摸</button>
                         <button id="hu-btn">胡牌</button>
@@ -89,13 +86,58 @@
                 </div>
             </div>
         </div>
+
+        <div id="dice-section" class="content-section">
+            <h2>麻將骰子</h2>
+            <div class="dice-roller-container">
+                <div id="dice-container" class="dice-container">
+                    <div class="dice">?</div>
+                    <div class="dice">?</div>
+                    <div class="dice">?</div>
+                </div>
+                <button id="roll-dice-btn">擲骰</button>
+                <div id="dice-result-area" class="result-area">
+                    <p>點擊「擲骰」按鈕來決定開門位置。</p>
+                    <p style="color: #666; font-size: 0.9em;">(此規則以無花牌為準，若有花牌請自行+1敦)</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="fortune-section" class="content-section">
+            <h2>今日運勢 & 招財神</h2>
+            <div class="fortune-card">
+                <h3>今日運勢</h3>
+                <div class="fortune-item">
+                    <span class="fortune-label">幸運色：</span>
+                    <span id="lucky-color" class="fortune-value"></span>
+                </div>
+                <div class="fortune-item">
+                    <span class="fortune-label">財運指數：</span>
+                    <span id="wealth-index" class="fortune-value"></span>
+                </div>
+                <div class="fortune-item">
+                    <span class="fortune-label">恩公牌：</span>
+                    <div id="benefactor-tiles" class="fortune-value hand-display small"></div>
+                </div>
+            </div>
+            <div class="summon-altar">
+                <h3>招財神儀式</h3>
+                <div class="god-of-wealth">💰</div>
+                <p id="summon-intro">誠心向財神爺祈求好運吧！</p>
+                <div id="divination-blocks" class="divination-blocks-container">
+                    <div class="block" id="block-1"></div>
+                    <div class="block" id="block-2"></div>
+                </div>
+                <button id="summon-btn">誠心擲筊</button>
+                <div id="summon-result" class="summon-result-area"></div>
+            </div>
+        </div>
     </main>
 
     <div id="modal" class="modal">
         <div class="modal-content">
             <span class="close-btn">&times;</span>
-            <div id="modal-body">
-                </div>
+            <div id="modal-body"></div>
         </div>
     </div>
 
@@ -104,22 +146,10 @@
             <span class="close-btn">&times;</span>
             <h3>設定</h3>
             <div id="settings-body" class="settings-menu">
-                <div class="settings-item" id="taishu-table-btn">
-                    <span>台數表</span>
-                    <span>&gt;</span>
-                </div>
-                 <div class="settings-item" id="baopai-rules-btn">
-                    <span>包牌行為</span>
-                    <span>&gt;</span>
-                </div>
-                <div class="settings-item">
-                    <span>自訂主題</span>
-                    <input type="color" id="theme-color-picker">
-                </div>
-                <div class="settings-item" id="privacy-policy-btn">
-                    <span>隱私權政策</span>
-                    <span>&gt;</span>
-                </div>
+                <div class="settings-item" id="taishu-table-btn"><span>台數表</span><span>&gt;</span></div>
+                <div class="settings-item" id="baopai-rules-btn"><span>包牌行為</span><span>&gt;</span></div>
+                <div class="settings-item"><span>自訂主題</span><input type="color" id="theme-color-picker"></div>
+                <div class="settings-item" id="privacy-policy-btn"><span>隱私權政策</span><span>&gt;</span></div>
             </div>
         </div>
     </div>
