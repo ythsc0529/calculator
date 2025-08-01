@@ -1,19 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
 
 :root {
-    --primary-color: #8B4513; /* 咖啡色 */
-    --secondary-color: #F5DEB3; /* 小麥色 */
-    --background-color: #F0F0E0; /* 米白 */
-    --table-color: #006400; /* 深綠色 */
-    --text-color: #333;
-    --white-color: #FFFFFF;
-    --disabled-color: #aaaaaa;
-    --gold-color: #FFD700;
-    --border-radius: 12px;
-    --box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    --transition-speed: 0.3s;
+    --primary-color: #8B4513; --secondary-color: #F5DEB3; --background-color: #F0F0E0; --table-color: #006400;
+    --text-color: #333; --white-color: #FFFFFF; --disabled-color: #aaaaaa; --gold-color: #FFD700;
+    --border-radius: 12px; --box-shadow: 0 4px 15px rgba(0,0,0,0.1); --transition-speed: 0.3s;
 }
-
 body { font-family: 'Noto Sans TC', sans-serif; background-color: var(--background-color); color: var(--text-color); margin: 0; padding: 0; line-height: 1.6; }
 header { background: var(--primary-color); color: var(--white-color); padding: 1rem; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); position: relative; }
 .settings-icon { position: absolute; top: 50%; right: 20px; transform: translateY(-50%); font-size: 1.8rem; cursor: pointer; transition: transform var(--transition-speed) ease; }
@@ -94,6 +85,12 @@ button:disabled { background-color: #ccc; cursor: not-allowed; }
 #dice-result-area strong { color: #D2691E; font-size: 1.3em; }
 .dice.rolling { animation: roll-animation 0.5s ease-in-out; }
 @keyframes roll-animation { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.2); } 100% { transform: rotate(360deg) scale(1); } }
+.settlement-details { margin-top: 1rem; text-align: left; }
+.transaction-list { list-style: none; padding: 0; }
+.transaction-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; font-size: 1.2rem; }
+.transaction-arrow { font-weight: bold; color: var(--primary-color); }
+.transaction-amount { font-weight: bold; background-color: var(--secondary-color); color: var(--primary-color); padding: 2px 8px; border-radius: 5px; }
+/* 招財神樣式 */
 .fortune-card, .summon-altar { background: var(--white-color); padding: 1.5rem 2rem; border-radius: var(--border-radius); box-shadow: var(--box-shadow); margin-bottom: 2rem; text-align: center; }
 .fortune-item { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.2rem; margin-bottom: 1rem; }
 .fortune-label { font-weight: bold; color: var(--primary-color); }
@@ -101,34 +98,14 @@ button:disabled { background-color: #ccc; cursor: not-allowed; }
 #wealth-index { color: var(--gold-color); font-size: 1.5rem; }
 .god-of-wealth { font-size: 5rem; animation: float-god 3s ease-in-out infinite; }
 @keyframes float-god { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-.summon-altar #summon-btn { font-size: 1.2rem; padding: 12px 30px; margin-top: 1.5rem; }
 .summon-result-area { margin-top: 1.5rem; font-size: 1.2rem; font-weight: bold; min-height: 50px; }
-.divination-blocks-container { display: flex; justify-content: center; gap: 10px; margin-top: 1rem; height: 50px; }
-.block { width: 30px; height: 50px; background-color: #d33; border-radius: 25px / 30px; border: 2px solid #8b0000; position: relative; }
-.block.tossing { animation: toss-animation 0.7s ease-out; }
-@keyframes toss-animation { 0% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-50px) rotate(180deg); } 100% { transform: translateY(0) rotate(360deg); } }
+.purification-tiles-container { display: flex; justify-content: center; gap: 15px; margin: 1.5rem 0; height: 70px; }
+.purification-tiles-container .mahjong-tile { width: 50px; opacity: 0.4; transition: all 0.3s ease; }
+.purification-tiles-container .mahjong-tile.purifying { opacity: 1; cursor: pointer; transform: scale(1.1); box-shadow: 0 0 20px var(--gold-color), 0 0 30px var(--gold-color); animation: pulse-glow 1s infinite; }
+.purification-tiles-container .mahjong-tile.purified { opacity: 1; border: 2px solid var(--gold-color); box-shadow: 0 0 10px var(--gold-color); }
+@keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 20px var(--gold-color); } 50% { box-shadow: 0 0 35px var(--gold-color); } }
+#purification-progress-container { height: 10px; background-color: #eee; border-radius: 5px; overflow: hidden; margin: 1rem auto; max-width: 300px; opacity: 0; transition: opacity 0.3s; }
+#purification-progress-container.visible { opacity: 1; }
+#purification-progress-bar { width: 0%; height: 100%; background-color: var(--gold-color); transition: width 0.1s linear; }
 .success-glow { animation: gold-glow 1.5s ease-in-out; }
-@keyframes gold-glow { 0% { box-shadow: 0 0 5px #fff; } 50% { box-shadow: 0 0 30px var(--gold-color), 0 0 40px var(--gold-color); } 100% { box-shadow: 0 0 5px #fff; } }
-
-/* 新增結算明細樣式 */
-.settlement-details { margin-top: 1rem; text-align: left; }
-.transaction-list { list-style: none; padding: 0; }
-.transaction-list li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    border-bottom: 1px solid #eee;
-    font-size: 1.2rem;
-}
-.transaction-arrow {
-    font-weight: bold;
-    color: var(--primary-color);
-}
-.transaction-amount {
-    font-weight: bold;
-    background-color: var(--secondary-color);
-    color: var(--primary-color);
-    padding: 2px 8px;
-    border-radius: 5px;
-}
+@keyframes gold-glow { 0% { text-shadow: 0 0 5px #fff; } 50% { text-shadow: 0 0 20px var(--gold-color), 0 0 30px var(--gold-color); } 100% { text-shadow: 0 0 5px #fff; } }
