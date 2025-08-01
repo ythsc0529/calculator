@@ -62,16 +62,20 @@
             </div>
 
             <div class="summon-altar">
-                <h3>招財神儀式 - 寶牌淨化</h3>
+                <h3>招財神儀式 - 財神拉霸機</h3>
                 <div class="god-of-wealth">💰</div>
                 <div id="ritual-game-area">
-                    <p id="summon-intro">快速點擊發光的寶牌以注入能量，完成淨化儀式！</p>
-                    <div id="purification-tiles" class="purification-tiles-container">
+                    <p id="summon-intro">您有 5 次機會，拉中幸運組合即可獲得庇佑！</p>
+                    <div class="slot-machine">
+                        <div class="reels-container">
+                            <div class="reel" id="reel1"></div>
+                            <div class="reel" id="reel2"></div>
+                            <div class="reel" id="reel3"></div>
                         </div>
-                    <div id="purification-progress-container">
-                        <div id="purification-progress-bar"></div>
+                        <div class="slot-overlay"></div>
                     </div>
-                    <button id="start-ritual-btn">開始儀式</button>
+                    <button id="spin-btn">拉霸</button>
+                    <p>剩餘次數：<strong id="spins-left">5</strong></p>
                 </div>
                 <div id="summon-result" class="summon-result-area"></div>
             </div>
