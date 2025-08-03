@@ -2,14 +2,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- !! 金鑰設定 !! ---
     // 請將您在 Firebase 網站上複製的 firebaseConfig 物件貼在這裡
     const firebaseConfig = {
-  apiKey: "AIzaSyACbiSTxewPWM4W5dOsXzAP4pC4gYAynLQ",
-  authDomain: "mahjong-99598.firebaseapp.com",
-  projectId: "mahjong-99598",
-  storageBucket: "mahjong-99598.firebasestorage.app",
-  messagingSenderId: "705478391272",
-  appId: "1:705478391272:web:53b3943edc6d21223aa05d",
-  measurementId: "G-R1NGPW9S3W"
-};
+      apiKey: "AIzaSyACbiSTxewPWM4W5dOsXzAP4pC4gYAynLQ",
+      authDomain: "mahjong-99598.firebaseapp.com",
+      projectId: "mahjong-99598",
+      storageBucket: "mahjong-99598.firebasestorage.app",
+      messagingSenderId: "705478391272",
+      appId: "1:705478391272:web:53b3943edc6d21223aa05d",
+      measurementId: "G-R1NGPW9S3W"
+    };
 
     // --- Firebase 初始化 ---
     let db;
