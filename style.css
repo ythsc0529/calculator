@@ -92,6 +92,7 @@ button:disabled { background-color: #ccc; cursor: not-allowed; }
 .transaction-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; font-size: 1.2rem; }
 .transaction-arrow { font-weight: bold; color: var(--primary-color); }
 .transaction-amount { font-weight: bold; background-color: var(--secondary-color); color: var(--primary-color); padding: 2px 8px; border-radius: 5px; }
+/* 招財神樣式 */
 .fortune-card, .summon-altar { background: var(--white-color); padding: 1.5rem 2rem; border-radius: var(--border-radius); box-shadow: var(--box-shadow); margin-bottom: 2rem; text-align: center; }
 .fortune-item { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.2rem; margin-bottom: 1rem; }
 .fortune-label { font-weight: bold; color: var(--primary-color); }
@@ -102,11 +103,13 @@ button:disabled { background-color: #ccc; cursor: not-allowed; }
 .summon-result-area { margin-top: 1.5rem; font-size: 1.2rem; font-weight: bold; min-height: 50px; }
 .success-glow { animation: gold-glow 1.5s ease-in-out; }
 @keyframes gold-glow { 0% { text-shadow: 0 0 5px #fff; } 50% { text-shadow: 0 0 20px var(--gold-color), 0 0 30px var(--gold-color); } 100% { text-shadow: 0 0 5px #fff; } }
+/* 遊戲大廳 */
 .ritual-game-container { display: none; margin-top: 1rem; animation: fadeIn 0.5s; }
 .back-to-selection-btn { background-color: #777; float: right; margin-bottom: 10px; }
 #game-selection-menu p { font-size: 1.1em; }
 .game-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-top: 1rem; }
 .game-choice-btn { font-size: 1rem; padding: 12px 10px; }
+/* 拉霸機 */
 .slot-machine { width: 270px; height: 100px; margin: 1.5rem auto; border: 5px solid var(--primary-color); border-radius: 10px; background: var(--secondary-color); position: relative; }
 .reels-container { display: flex; width: 100%; height: 100%; overflow: hidden; }
 .reel { width: 33.33%; border-right: 2px solid var(--primary-color); transform: translateY(0); }
@@ -114,16 +117,57 @@ button:disabled { background-color: #ccc; cursor: not-allowed; }
 .reel .mahjong-tile { width: 80%; height: auto; margin: 10px auto; display: block; }
 .slot-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(245,222,179,0.8) 0%, rgba(245,222,179,0.1) 25%, rgba(245,222,179,0.1) 75%, rgba(245,222,179,0.8) 100%); pointer-events: none; border-radius: 5px; border-top: 3px solid white; border-bottom: 3px solid white; box-sizing: border-box; }
 #spin-btn { font-size: 1.2rem; margin-top: 1rem; }
+/* 好運爆爆樂 */
 #game-info-bar { display: none; justify-content: space-around; background: #f0f0f0; padding: 10px; border-radius: 8px; margin: 1rem 0; font-size: 1.2rem; }
 #game-info-bar strong { color: var(--primary-color); }
 .whack-a-tile-board { display: none; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 10px; width: 270px; height: 270px; margin: 1.5rem auto; background-color: var(--secondary-color); padding: 10px; border-radius: 10px; }
 .whack-a-tile-hole { background-color: var(--primary-color); border-radius: 50%; overflow: hidden; position: relative; }
 .whack-a-tile-hole .mahjong-tile { position: absolute; bottom: 0; left: 50%; transform: translate(-50%, 100%); width: 60%; height: auto; cursor: pointer; transition: transform 0.1s ease-out; }
 .whack-a-tile-hole .mahjong-tile.up { transform: translate(-50%, 0%); }
+/* 擲筊 */
 .divination-blocks-container { display: flex; justify-content: center; gap: 10px; margin-top: 1rem; height: 50px; }
 .block { width: 30px; height: 50px; background-color: #d33; border-radius: 25px / 30px; border: 2px solid #8b0000; position: relative; }
 .block.tossing { animation: toss-animation 0.7s ease-out; }
 @keyframes toss-animation { 0% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-50px) rotate(180deg); } 100% { transform: translateY(0) rotate(360deg); } }
+/* 神之序列 */
+.offering-slots-container { display: flex; justify-content: center; gap: 10px; margin: 1.5rem 0; }
+.offering-slot { width: 50px; height: 68px; border: 2px dashed var(--disabled-color); border-radius: 5px; display: flex; justify-content: center; align-items: center; font-size: 2rem; color: var(--disabled-color); background-color: #f9f9f9; }
+.offering-slot img { width: 100%; height: auto; }
+#reset-sequence-btn { background-color: #777; }
+/* 寶牌淨化 */
+.purification-tiles-container { display: flex; justify-content: center; gap: 15px; margin: 1.5rem 0; height: 70px; }
+.purification-tiles-container .mahjong-tile { width: 50px; opacity: 0.4; transition: all 0.3s ease; }
+.purification-tiles-container .mahjong-tile.purifying { opacity: 1; cursor: pointer; transform: scale(1.1); box-shadow: 0 0 20px var(--gold-color), 0 0 30px var(--gold-color); animation: pulse-glow 1s infinite; }
+.purification-tiles-container .mahjong-tile.purified { opacity: 1; border: 2px solid var(--gold-color); box-shadow: 0 0 10px var(--gold-color); }
+@keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 20px var(--gold-color); } 50% { box-shadow: 0 0 35px var(--gold-color); } }
+#purification-progress-container { height: 10px; background-color: #eee; border-radius: 5px; overflow: hidden; margin: 1rem auto; max-width: 300px; opacity: 0; transition: opacity 0.3s; }
+#purification-progress-container.visible { opacity: 1; }
+#purification-progress-bar { width: 0%; height: 100%; background-color: var(--gold-color); transition: width 0.1s linear; }
+/* 金龍吐珠 */
+#dragon-pearl-board { position: relative; width: 300px; height: 250px; background-color: #add8e6; margin: 1rem auto; border: 3px solid var(--primary-color); overflow: hidden; }
+#dragon-pearl-dragon { position: absolute; top: 10px; left: 0; width: 50px; height: auto; animation: dragon-move 4s linear infinite alternate; }
+#dragon-pearl-pearl { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); width: 35px; height: auto; cursor: pointer; }
+@keyframes dragon-move { from { left: 0; } to { left: calc(100% - 50px); } }
+/* 對對碰 */
+#memory-match-info { font-size: 1.2rem; margin-bottom: 1rem; }
+#memory-match-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-width: 300px; margin: auto; }
+.memory-card { width: 60px; height: 80px; position: relative; transform-style: preserve-3d; transition: transform 0.5s; cursor: pointer; }
+.memory-card .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; justify-content: center; align-items: center; }
+.memory-card .card-back { background-color: var(--primary-color); border-radius: 5px; }
+.memory-card .card-front { transform: rotateY(180deg); background: var(--white-color); border-radius: 5px; }
+.memory-card.is-flipped { transform: rotateY(180deg); }
+.memory-card .mahjong-tile { width: 80%; height: auto; }
+/* 天選之人 */
+#chosen-one-board { display: flex; justify-content: center; gap: 15px; height: 90px; margin-top: 1rem; }
+.chosen-one-card { width: 60px; height: 85px; transition: transform 0.5s ease-in-out; cursor: pointer; }
+/* 風生水起 */
+#wind-rises-board { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 200px; margin: 1.5rem auto; }
+.wind-tile-button { width: 90px; height: 90px; opacity: 0.7; transition: opacity 0.2s, transform 0.2s; }
+.wind-tile-button.active { opacity: 1; transform: scale(1.05); box-shadow: 0 0 20px var(--gold-color); }
+/* 海底撈月 */
+#scoop-the-moon-board { padding: 20px 0; }
+#scoop-channel { position: relative; width: 80px; height: 200px; background-color: #00008b; margin: auto; border: 5px solid #0000cd; border-top: none; }
+#scoop-tile { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 50px; height: auto; cursor: grabbing; }
 /* 找牌咖 */
 .lobby-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
 .join-by-id { display: flex; gap: 0.5rem; }
