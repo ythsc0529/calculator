@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setupDice();
         setupFortune();
         if (db && auth) {
-            setupPaiKaFinder();
+            setupPaiKaFinder(); // 確保函數已定義
             setupAuth();
         }
         setupModals();
@@ -428,3 +428,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 程式進入點 ---
     init();
 });
+
+function setupPaiKaFinder() {
+    console.log("找牌咖功能初始化");
+    // 在這裡實現找牌咖功能的初始化邏輯
+}
+
+function showFinderView(view) {
+    console.log(`切換到 ${view} 視圖`);
+    // 根據需求切換找牌咖的視圖
+    if (view === 'lobby') {
+        lobbyView.style.display = 'block';
+        createTableView.style.display = 'none';
+        roomDetailsView.style.display = 'none';
+    } else if (view === 'create-table') {
+        lobbyView.style.display = 'none';
+        createTableView.style.display = 'block';
+        roomDetailsView.style.display = 'none';
+    } else if (view === 'room-details') {
+        lobbyView.style.display = 'none';
+        createTableView.style.display = 'none';
+        roomDetailsView.style.display = 'block';
+    }
+}
