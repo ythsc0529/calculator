@@ -454,21 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function setupPaiKaFinder() {
     console.log("找牌咖功能初始化");
-    db.collection('rooms').onSnapshot(snapshot => {
-        const rooms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        console.log("房間列表：", rooms);
-        // 更新房間列表的 DOM 顯示
-        const tableListContainer = document.getElementById('table-list-container');
-        tableListContainer.innerHTML = rooms.map(room => `
-            <div class="room-item">
-                <h4>${room.parlorName}</h4>
-                <p>城市: ${room.city}</p>
-                <p>時間: ${new Date(room.playTime.seconds * 1000).toLocaleString()}</p>
-            </div>
-        `).join('');
-    }, error => {
-        console.error("無法讀取房間列表：", error);
-    });
+    // 在這裡實現找牌咖功能的初始化邏輯
 }
 
 function showFinderView(view) {
