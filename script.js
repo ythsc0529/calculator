@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) {
         console.error("Firebase 初始化失敗，『找牌咖』功能將無法使用。請確認 script.js 中的 firebaseConfig 是否已正確設定。");
         const finderNavBtn = document.getElementById('nav-finder');
-        if(finderNavBtn) {
+        if (finderNavBtn) {
             finderNavBtn.style.display = 'none';
         }
     }
@@ -454,7 +454,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function setupPaiKaFinder() {
     console.log("找牌咖功能初始化");
-    // 在這裡實現找牌咖功能的初始化邏輯
+    if (!db) {
+        console.error("Firestore 未初始化，無法加載房間列表");
+        return;
+    }
+
+    const tableListContainer = document.getElementById('table-list-container');
+    tableListContainer.innerHTML = '<p>正在連接伺服器...</p>';
+
+    db.collection('tables').onSnapshot(snapshot => {
+        const rooms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (rooms.length === 0) {
+            tableListContainer.innerHTML = '<p>目前沒有房間，請開設新桌。</p>';
+        } else {
+            tableListContainer.innerHTML = rooms.map(room => `
+                <div class="room-item">
+                    <h4>${room.name}</h4>
+                    <p>縣市: ${room.city}</p>
+                    <p>時間: ${room.time}</p>
+                    <button onclick="joinRoom('${room.id}')">加入</button>
+                </div>
+            `).join('');
+        }
+    }, error => {
+        console.error("加載房間列表失敗", error);
+        tableListContainer.innerHTML = '<p>加載房間列表失敗，請稍後再試。</p>';
+    });
 }
 
 function showFinderView(view) {
