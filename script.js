@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) {
         console.error("Firebase 初始化失敗，『找牌咖』功能將無法使用。請確認 script.js 中的 firebaseConfig 是否已正確設定。");
         const finderNavBtn = document.getElementById('nav-finder');
-        if(finderNavBtn) {
+        if (finderNavBtn) {
             finderNavBtn.style.display = 'none';
         }
     }
@@ -454,7 +454,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function setupPaiKaFinder() {
     console.log("找牌咖功能初始化");
-    // 在這裡實現找牌咖功能的初始化邏輯
+    if (!db || !auth) {
+        console.error("Firebase 未初始化，無法加載牌桌列表");
+        return;
+    }
+
+    const tableListContainer = document.getElementById('table-list-container');
+    tableListContainer.innerHTML = '<p>正在連接伺服器...</p>';
+
+    db.collection('tables').onSnapshot(snapshot => {
+        const tables = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (tables.length === 0) {
+            tableListContainer.innerHTML = '<p>目前沒有牌桌，請開設新桌。</p>';
+        } else {
+            tableListContainer.innerHTML = tables.map(table => `
+                <div class="table-item">
+                    <h4>${table.name}</h4>
+                    <p>縣市: ${table.city}</p>
+                    <p>時間: ${table.time}</p>
+                    <button onclick="joinTable('${table.id}')">加入</button>
+                </div>
+            `).join('');
+        }
+    }, error => {
+        console.error("加載牌桌列表失敗", error);
+        tableListContainer.innerHTML = '<p>加載牌桌列表失敗，請稍後再試。</p>';
+    });
 }
 
 function showFinderView(view) {
