@@ -122,6 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatBox = document.getElementById('chat-box');
     const roomMembersEl = document.getElementById('room-members');
     const joinRoomBtn = document.getElementById('join-room-btn');
+    const leaveRoomBtn = document.getElementById('leave-room-btn');
     const deleteRoomBtn = document.getElementById('delete-room-btn');
     const sendMessageBtn = document.getElementById('send-message-btn');
     const messageInput = document.getElementById('message-input');
@@ -382,11 +383,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const table = { id: doc.id, ...doc.data() };
             const isMember = table.members && table.members.some(m => m.uid === user.uid);
             const isOwner = table.ownerId === user.uid;
+            const isFull = table.members && table.members.length >= 4;
 
-            // 更新房間資訊
+            // 更新房間資訊 (所有人可見)
             roomInfoEl.innerHTML = `<p><strong>縣市：</strong> ${table.city}</p><p><strong>地點：</strong> ${table.parlor}</p><p><strong>時間：</strong> ${table.time}</p><p><strong>大小：</strong> ${table.stakes}</p><p><strong>目前人數：</strong> ${table.members ? table.members.length : 0} / 4</p><p>請將以下房號告知您的朋友：</p><div class="room-id">${table.id}</div>`;
 
-            // 更新成員列表
+            // 更新成員列表 (所有人可見)
             roomMembersEl.innerHTML = '<h4>目前成員：</h4>';
             if (table.members && table.members.length > 0) {
                 table.members.forEach(member => {
@@ -397,23 +399,46 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            // 更新按鈕狀態
-            joinRoomBtn.style.display = isMember || (table.members && table.members.length >= 4) ? 'none' : 'block';
+            // 更新按鈕和聊天室的顯示邏輯
+            joinRoomBtn.style.display = !isMember && !isFull ? 'block' : 'none';
+            leaveRoomBtn.style.display = isMember && !isOwner ? 'block' : 'none';
             deleteRoomBtn.style.display = isOwner ? 'block' : 'none';
             chatBox.style.display = isMember ? 'block' : 'none';
 
-            // 設定按鈕事件
+            // 設定按鈕事件 (使用 .onclick 避免重複綁定)
             joinRoomBtn.onclick = () => {
                 roomRef.update({
                     members: firebase.firestore.FieldValue.arrayUnion({ uid: user.uid, name: user.displayName || user.email })
                 });
             };
 
+            leaveRoomBtn.onclick = () => {
+                if (confirm('確定要退出這個房間嗎？')) {
+                    roomRef.update({
+                        members: firebase.firestore.FieldValue.arrayRemove({ uid: user.uid, name: user.displayName || user.email })
+                    }).then(() => {
+                        alert('您已退出房間。');
+                        showFinderView('lobby'); // 退出後返回大廳
+                    });
+                }
+            };
+
             deleteRoomBtn.onclick = () => {
                 if (confirm('確定要刪除這個房間嗎？此動作無法復原。')) {
-                    roomRef.delete().then(() => {
-                        alert('房間已刪除');
+                    // 刪除聊天室子集合 (可選，但建議)
+                    db.collection('tables').doc(tableId).collection('messages').get().then(snapshot => {
+                        const batch = db.batch();
+                        snapshot.docs.forEach(doc => batch.delete(doc.ref));
+                        return batch.commit();
+                    }).then(() => {
+                        // 刪除房間主文件
+                        return roomRef.delete();
+                    }).then(() => {
+                        alert('房間已成功刪除');
                         showFinderView('lobby');
+                    }).catch(error => {
+                        console.error("刪除房間失敗: ", error);
+                        alert("刪除房間時發生錯誤。");
                     });
                 }
             };

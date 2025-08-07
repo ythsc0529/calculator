@@ -188,6 +188,14 @@ button:disabled { background-color: #ccc; cursor: not-allowed; }
 .room-info-box { background-color: #f9f9f9; border: 1px solid #eee; border-radius: 8px; padding: 1.5rem; text-align: left; }
 .room-info-box p { font-size: 1.1rem; margin: 0.5rem 0; }
 .room-info-box .room-id { font-size: 1.5rem; font-weight: bold; color: var(--primary-color); text-align: center; background: var(--secondary-color); padding: 10px; border-radius: 5px; margin-top: 1rem; user-select: text; }
+
+.room-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  justify-content: center;
+}
+
 .chat-box {
   margin-top: 2rem;
 }
