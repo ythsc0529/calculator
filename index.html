@@ -5,10 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>麻將工具箱</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="path/to/favicon.ico">
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     </head>
 <body>
 
@@ -22,8 +21,7 @@
             <button id="nav-fortune" class="nav-btn">招財神</button>
             <button id="nav-finder" class="nav-btn">找牌咖</button>
         </nav>
-        <div id="auth-container">
-            </div>
+        <div id="settings-btn" class="settings-icon">⚙️</div>
     </header>
 
     <main>
@@ -58,53 +56,48 @@
         </div>
         
         <div id="finder-section" class="content-section">
-            <div id="finder-logged-out-view">
-                <h2>請先登入</h2>
-                <p>「找牌咖」功能需要登入 Google 帳號才能使用。</p>
-                <button id="google-login-btn">使用 Google 登入</button>
+            <div id="login-view" style="display: none; text-align: center; padding: 2rem;">
+  <h3>請先登入以使用找牌咖功能</h3>
+  <button id="google-login-btn">使用 Google 帳號登入</button>
+</div>
+            <h2>找牌咖</h2>
+            <div id="lobby-view">
+                <div class="lobby-actions"><button id="show-create-table-view-btn">我要開桌</button><div class="join-by-id"><input type="text" id="join-room-id-input" placeholder="輸入房號加入"><button id="join-by-id-btn">加入</button></div></div>
+                <h3>牌咖大廳</h3><div id="table-list-container"><p>正在連接伺服器...</p></div>
             </div>
-            <div id="finder-logged-in-view" style="display: none;">
-                <h2>找牌咖</h2>
-                <div id="lobby-view">
-                    <div class="lobby-actions"><button id="show-create-table-view-btn">我要開桌</button><div class="join-by-id"><input type="text" id="join-room-id-input" placeholder="輸入 6 位房號加入"><button id="join-by-id-btn">加入</button></div></div>
-                    <h3>牌咖大廳</h3><div id="table-list-container"><p>正在連接伺服器...</p></div>
-                </div>
-                <div id="create-table-view" style="display: none;">
-                    <button class="back-to-lobby-btn">返回大廳</button>
-                    <h3>開設新桌</h3>
-                    <form id="create-table-form" class="table-form">
-                        <div class="form-group"><label for="city-select">縣市：</label><select id="city-select" required></select></div>
-                        <div class="form-group"><label for="parlor-name-input">麻將館名稱：</label><input type="text" id="parlor-name-input" placeholder="例如：我家" required></div>
-                        <div class="form-group"><label for="play-time-input">預計開打時間：</label><input type="time" id="play-time-input" required></div>
-                        <div class="form-group"><label>大小：</label><div class="stakes-options"><label><input type="radio" name="stakes" value="30/10" checked> 30/10</label><label><input type="radio" name="stakes" value="50/20"> 50/20</label><label><input type="radio" name="stakes" value="100/20"> 100/20</label><label><input type="radio" name="stakes" value="100/50"> 100/50</label><label><input type="radio" name="stakes" value="任意"> 任意</label></div></div>
-                        <button type="submit">確認開桌</button>
-                    </form>
-                </div>
-                <div id="room-details-view" style="display: none;">
-                    <button class="back-to-lobby-btn">返回大廳</button>
-                    <h3>房間詳情</h3>
-                    <div id="room-info" class="room-info-box"></div>
-                    <div class="room-members-chat-container">
-                        <div id="room-members-container">
-                            <h4>目前成員</h4>
-                            <ul id="room-members-list"></ul>
-                        </div>
-                        <div id="chat-container">
-                            <h4>聊天室</h4>
-                            <div id="chat-messages"></div>
-                            <form id="chat-form">
-                                <input type="text" id="chat-input" placeholder="輸入訊息..." autocomplete="off" required>
-                                <button type="submit">送出</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
+            <div id="create-table-view" style="display: none;">
+                <button class="back-to-lobby-btn">返回大廳</button>
+                <h3>開設新桌</h3>
+                <form id="create-table-form" class="table-form">
+                    <div class="form-group"><label for="city-select">縣市：</label><select id="city-select" required></select></div>
+                    <div class="form-group"><label for="parlor-name-input">麻將館名稱：</label><input type="text" id="parlor-name-input" placeholder="例如：我家" required></div>
+                    <div class="form-group"><label for="play-time-input">預計開打時間：</label><input type="time" id="play-time-input" required></div>
+                    <div class="form-group"><label>大小：</label><div class="stakes-options"><label><input type="radio" name="stakes" value="30/10" checked> 30/10</label><label><input type="radio" name="stakes" value="50/20"> 50/20</label><label><input type="radio" name="stakes" value="100/20"> 100/20</label><label><input type="radio" name="stakes" value="100/50"> 100/50</label><label><input type="radio" name="stakes" value="任意"> 任意</label></div></div>
+                    <button type="submit">確認開桌</button>
+                </form>
+            </div>
+            <div id="room-details-view" style="display: none;">
+                <button class="back-to-lobby-btn">返回大廳</button>
+                <h3>房間詳情</h3><div id="room-info" class="room-info-box"></div>
+                <div class="room-actions">
+  <button id="join-room-btn">加入房間</button>
+  <button id="delete-room-btn" style="display: none;">刪除房間</button>
+</div>
+<div id="room-members"></div>
+<div class="chat-box">
+  <div id="messages-container" style="height: 200px; overflow-y: auto; border: 1px solid #ccc; margin: 1rem 0; padding: 1rem;"></div>
+  <div class="message-input">
+    <input type="text" id="message-input" placeholder="輸入訊息...">
+    <button id="send-message-btn">送出</button>
+  </div>
+</div>
             </div>
         </div>
 
     </main>
-    
+
     <div id="modal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><div id="modal-body"></div></div></div>
+    <div id="settings-modal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3>設定</h3><div id="settings-body" class="settings-menu"><div class="settings-item" id="taishu-table-btn"><span>台數表</span><span>&gt;</span></div><div class="settings-item" id="baopai-rules-btn"><span>包牌行為</span><span>&gt;</span></div><div class="settings-item"><span>自訂主題</span><input type="color" id="theme-color-picker"></div><div class="settings-item" id="privacy-policy-btn"><span>隱私權政策</span><span>&gt;</span></div></div></div></div>
 
     <script src="script.js"></script>
 </body>
