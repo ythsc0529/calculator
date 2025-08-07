@@ -230,19 +230,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 遊戲10：海底撈月 ---
     function setupScoopTheMoonGame(){scoopTile.addEventListener("mousedown",e=>{if(e.target.id!=="scoop-tile")return;let t=!1,n=e.clientY;e.target.style.cursor="grabbing",document.onmousemove=a=>{const o=n-a.clientY;e.target.style.bottom=`${5+o}px`,o>scoopChannel.clientHeight-e.target.clientHeight?t=!0:(e.target.offsetLeft<scoopChannel.offsetLeft-10||e.target.offsetLeft>scoopChannel.offsetLeft+scoopChannel.clientWidth-e.target.clientWidth+10)&&(t=!1,document.onmouseup())},document.onmouseup=()=>{document.onmousemove=null,document.onmouseup=null,e.target.style.cursor="grab",t?handleGameWin("成功撈月！好兆頭！"):scoopResultEl.innerHTML="<strong style='color:red'>哎呀！碰到牌牆了！</strong>",setTimeout(()=>e.target.style.bottom="5px",500)}})}
     // --- 找牌咖 (Firebase) ---
-    // 加入新的變數
-let currentUser = null;
-let currentRoom = null;
+    // 在開頭加入城市資料
+const CITIES = [
+  '台北市', '新北市', '基隆市', '桃園市', '新竹市', '新竹縣',
+  '苗栗縣', '台中市', '彰化縣', '南投縣', '雲林縣', '嘉義市',
+  '嘉義縣', '台南市', '高雄市', '屏東縣', '宜蘭縣', '花蓮縣',
+  '台東縣', '澎湖縣', '金門縣', '連江縣'
+];
 
 // 修改 setupPaiKaFinder 函數
 function setupPaiKaFinder() {
-  // 加入 Google 登入
   const provider = new firebase.auth.GoogleAuthProvider();
   
   document.getElementById('google-login-btn').addEventListener('click', () => {
-    firebase.auth().signInWithPopup(provider);
+    firebase.auth().signInWithPopup(provider)
+      .catch(error => {
+        console.error('登入失敗:', error);
+        alert('登入失敗，請稍後再試');
+      });
   });
 
+  // 改用 onAuthStateChanged 監聽登入狀態
   firebase.auth().onAuthStateChanged((user) => {
     currentUser = user;
     if (user) {
@@ -256,178 +264,38 @@ function setupPaiKaFinder() {
   });
 }
 
-function setupFinderFeatures() {
-  populateCities();
-  showCreateTableBtn.addEventListener('click', () => showFinderView('create'));
-  backToLobbyBtns.forEach(btn => btn.addEventListener('click', handleBackToLobby));
-  createTableForm.addEventListener('submit', handleCreateTable);
-  joinByIdBtn.addEventListener('click', handleJoinById);
+// 加入 populateCities 函數
+function populateCities() {
+  const citySelect = document.createElement('select');
+  citySelect.id = 'city-select';
+  citySelect.required = true;
   
-  // 監聽房間列表
-  db.collection("tables").orderBy("createdAt", "desc").limit(20)
-    .onSnapshot(querySnapshot => {
-      const tables = [];
-      querySnapshot.forEach(doc => {
-        tables.push({ id: doc.id, ...doc.data() });
-      });
-      renderLobby(tables);
-    });
+  const defaultOption = document.createElement('option');
+  defaultOption.value = '';
+  defaultOption.textContent = '請選擇城市';
+  defaultOption.disabled = true;
+  defaultOption.selected = true;
+  citySelect.appendChild(defaultOption);
 
-  // 監聽當前房間
-  if (localStorage.getItem('currentRoomId')) {
-    const roomId = localStorage.getItem('currentRoomId');
-    db.collection("tables").doc(roomId).get().then(doc => {
-      if (doc.exists) {
-        showRoomDetails({ id: doc.id, ...doc.data() });
-      } else {
-        localStorage.removeItem('currentRoomId');
-      }
-    });
+  CITIES.forEach(city => {
+    const option = document.createElement('option');
+    option.value = city;
+    option.textContent = city;
+    citySelect.appendChild(option);
+  });
+
+  // 找到表單中的城市選擇欄位並替換
+  const cityField = document.querySelector('#create-table-form .city-field');
+  if (cityField) {
+    cityField.appendChild(citySelect);
   }
 }
 
-function handleCreateTable(event) {
-  event.preventDefault();
-  const roomId = Math.random().toString(36).substr(2, 6).toUpperCase(); // 簡短房號
-  
-  const tableData = {
-    id: roomId,
-    city: citySelect.value,
-    parlor: document.getElementById('parlor-name-input').value,
-    time: document.getElementById('play-time-input').value,
-    stakes: document.querySelector('input[name="stakes"]:checked').value,
-    ownerId: currentUser.uid,
-    ownerName: currentUser.displayName,
-    playerCount: 1,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    members: [{
-      uid: currentUser.uid,
-      name: currentUser.displayName,
-      photoURL: currentUser.photoURL
-    }]
-  };
-
-  db.collection("tables").doc(roomId).set(tableData)
-    .then(() => {
-      alert(`開桌成功！您的房號是：${roomId}`);
-      showRoomDetails(tableData);
-    });
-}
-
-function showRoomDetails(table) {
-  currentRoom = table;
-  localStorage.setItem('currentRoomId', table.id);
-  
-  const isOwner = currentUser.uid === table.ownerId;
-  document.getElementById('delete-room-btn').style.display = isOwner ? 'block' : 'none';
-  document.getElementById('join-room-btn').style.display = 
-    table.members.find(m => m.uid === currentUser.uid) ? 'none' : 'block';
-
-  roomInfoEl.innerHTML = `
-    <p><strong>房號：</strong> ${table.id}</p>
-    <p><strong>房主：</strong> ${table.ownerName}</p>
-    <p><strong>縣市：</strong> ${table.city}</p>
-    <p><strong>地點：</strong> ${table.parlor}</p>
-    <p><strong>時間：</strong> ${table.time}</p>
-    <p><strong>大小：</strong> ${table.stakes}</p>
-    <p><strong>目前人數：</strong> ${table.members.length} / 4</p>
-  `;
-
-  // 顯示成員列表
-  const membersEl = document.getElementById('room-members');
-  membersEl.innerHTML = '<h4>房間成員</h4>';
-  table.members.forEach(member => {
-    membersEl.innerHTML += `
-      <div class="member-item">
-        <img src="${member.photoURL}" alt="" style="width: 24px; height: 24px; border-radius: 50%;">
-        ${member.name}
-      </div>
-    `;
-  });
-
-  // 設置訊息監聽
-  setupMessageListener(table.id);
-  showFinderView('room');
-}
-
-function handleBackToLobby() {
-  localStorage.removeItem('currentRoomId');
-  currentRoom = null;
-  showFinderView('lobby');
-}
-
-// 加入新的函數處理訊息功能
-function setupMessageListener(roomId) {
-  const messagesContainer = document.getElementById('messages-container');
-  const messageInput = document.getElementById('message-input');
-  const sendMessageBtn = document.getElementById('send-message-btn');
-
-  // 清除舊的訊息
-  messagesContainer.innerHTML = '';
-
-  // 監聽新訊息
-  db.collection('tables').doc(roomId)
-    .collection('messages')
-    .orderBy('timestamp')
-    .onSnapshot(snapshot => {
-      snapshot.docChanges().forEach(change => {
-        if (change.type === 'added') {
-          const msg = change.doc.data();
-          const messageEl = document.createElement('div');
-          messageEl.className = `message ${msg.uid === currentUser.uid ? 'own-message' : ''}`;
-          messageEl.innerHTML = `
-            <strong>${msg.userName}:</strong> ${msg.text}
-          `;
-          messagesContainer.appendChild(messageEl);
-          messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-      });
-    });
-
-  // 發送訊息
-  sendMessageBtn.onclick = () => {
-    const text = messageInput.value.trim();
-    if (text) {
-      db.collection('tables').doc(roomId)
-        .collection('messages')
-        .add({
-          text,
-          uid: currentUser.uid,
-          userName: currentUser.displayName,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      messageInput.value = '';
-    }
-  };
-}
-
-// 加入新的事件監聽
-document.getElementById('join-room-btn').addEventListener('click', () => {
-  if (!currentRoom) return;
-  
-  const memberData = {
-    uid: currentUser.uid,
-    name: currentUser.displayName,
-    photoURL: currentUser.photoURL
-  };
-
-  db.collection('tables').doc(currentRoom.id).update({
-    members: firebase.firestore.FieldValue.arrayUnion(memberData),
-    playerCount: firebase.firestore.FieldValue.increment(1)
-  });
-});
-
-document.getElementById('delete-room-btn').addEventListener('click', () => {
-  if (!currentRoom || currentRoom.ownerId !== currentUser.uid) return;
-  
-  if (confirm('確定要刪除房間？')) {
-    db.collection('tables').doc(currentRoom.id).delete()
-      .then(() => {
-        alert('房間已刪除');
-        handleBackToLobby();
-      });
-  }
-});
+// 修改錯誤處理
+window.onerror = function(msg, url, line, col, error) {
+  console.error('Error: ', msg, '\nURL: ', url, '\nLine:', line, '\nColumn:', col, '\nError object:', error);
+  return false;
+};
     // --- 通用函式 ---
     function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
     function setupModals(){document.querySelectorAll(".modal").forEach(e=>{e.querySelector(".close-btn").addEventListener("click",()=>closeModal(e)),window.addEventListener("click",t=>{t.target===e&&closeModal(e)})})}

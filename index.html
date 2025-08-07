@@ -69,12 +69,31 @@
                 <button class="back-to-lobby-btn">返回大廳</button>
                 <h3>開設新桌</h3>
                 <form id="create-table-form" class="table-form">
-                    <div class="form-group"><label for="city-select">縣市：</label><select id="city-select" required></select></div>
-                    <div class="form-group"><label for="parlor-name-input">麻將館名稱：</label><input type="text" id="parlor-name-input" placeholder="例如：我家" required></div>
-                    <div class="form-group"><label for="play-time-input">預計開打時間：</label><input type="time" id="play-time-input" required></div>
-                    <div class="form-group"><label>大小：</label><div class="stakes-options"><label><input type="radio" name="stakes" value="30/10" checked> 30/10</label><label><input type="radio" name="stakes" value="50/20"> 50/20</label><label><input type="radio" name="stakes" value="100/20"> 100/20</label><label><input type="radio" name="stakes" value="100/50"> 100/50</label><label><input type="radio" name="stakes" value="任意"> 任意</label></div></div>
-                    <button type="submit">確認開桌</button>
-                </form>
+  <div class="form-group city-field">
+    <label for="city-select">選擇城市</label>
+    <!-- citySelect 將在 JavaScript 中動態插入此處 -->
+  </div>
+  <div class="form-group">
+    <label for="parlor-name-input">麻將館名稱</label>
+    <input type="text" id="parlor-name-input" required>
+  </div>
+  <div class="form-group">
+    <label for="play-time-input">預計開打時間</label>
+    <input type="time" id="play-time-input" required>
+  </div>
+  <div class="form-group">
+    <label>底注設定</label>
+    <div class="stakes-options">
+      <input type="radio" id="stakes-low" name="stakes" value="小台" required>
+      <label for="stakes-low">30/10</label>
+      <input type="radio" id="stakes-medium" name="stakes" value="中台">
+      <label for="stakes-medium">50/20</label>
+      <input type="radio" id="stakes-high" name="stakes" value="大台">
+      <label for="stakes-high">100/20</label>
+    </div>
+  </div>
+  <button type="submit">建立房間</button>
+</form>
             </div>
             <div id="room-details-view" style="display: none;">
                 <button class="back-to-lobby-btn">返回大廳</button>
