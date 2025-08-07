@@ -21,6 +21,7 @@
             <button id="nav-fortune" class="nav-btn">招財神</button>
             <button id="nav-finder" class="nav-btn">找牌咖</button>
         </nav>
+        <div id="user-info-display" style="position: absolute; top: 15px; right: 70px; color: white;"></div>
         <div id="settings-btn" class="settings-icon">⚙️</div>
     </header>
 
@@ -84,12 +85,16 @@
   <div class="form-group">
     <label>底注設定</label>
     <div class="stakes-options">
-      <input type="radio" id="stakes-low" name="stakes" value="小台" required>
-      <label for="stakes-low">30/10</label>
-      <input type="radio" id="stakes-medium" name="stakes" value="中台">
-      <label for="stakes-medium">50/20</label>
-      <input type="radio" id="stakes-high" name="stakes" value="大台">
-      <label for="stakes-high">100/20</label>
+      <input type="radio" id="stakes-30-10" name="stakes" value="30/10" required checked>
+      <label for="stakes-30-10">30/10</label>
+      <input type="radio" id="stakes-50-20" name="stakes" value="50/20">
+      <label for="stakes-50-20">50/20</label>
+      <input type="radio" id="stakes-100-20" name="stakes" value="100/20">
+      <label for="stakes-100-20">100/20</label>
+      <input type="radio" id="stakes-100-50" name="stakes" value="100/50">
+      <label for="stakes-100-50">100/50</label>
+      <input type="radio" id="stakes-any" name="stakes" value="任意">
+      <label for="stakes-any">任意</label>
     </div>
   </div>
   <button type="submit">建立房間</button>
@@ -98,13 +103,14 @@
             <div id="room-details-view" style="display: none;">
                 <button class="back-to-lobby-btn">返回大廳</button>
                 <h3>房間詳情</h3><div id="room-info" class="room-info-box"></div>
+                <div class="room-members"></div>
                 <div class="room-actions">
-  <button id="join-room-btn">加入房間</button>
-  <button id="delete-room-btn" style="display: none;">刪除房間</button>
-</div>
-<div id="room-members"></div>
-<div class="chat-box">
-  <div id="messages-container" style="height: 200px; overflow-y: auto; border: 1px solid #ccc; margin: 1rem 0; padding: 1rem;"></div>
+                  <button id="join-room-btn" style="display: none;">加入房間</button>
+                  <button id="delete-room-btn" style="display: none;">刪除房間</button>
+                </div>
+<div id="chat-box" class="chat-box" style="display: none;">
+  <h4>聊天室</h4>
+  <div id="messages-container" style="height: 200px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 1rem; padding: 1rem;"></div>
   <div class="message-input">
     <input type="text" id="message-input" placeholder="輸入訊息...">
     <button id="send-message-btn">送出</button>
