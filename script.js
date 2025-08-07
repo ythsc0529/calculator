@@ -430,13 +430,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
             deleteRoomBtn.onclick = () => {
                 if (confirm('確定要刪除這個房間嗎？此動作無法復原。')) {
-                    // 刪除聊天室子集合 (可選，但建議)
+                    
+                    // 我們不再嘗試從客戶端刪除子集合，以避免權限問題。
+                    // 直接刪除房間文件。
+                    roomRef.delete().then(() => {
+                        alert('房間已成功刪除');
+                        showFinderView('lobby');
+                    }).catch(error => {
+                        console.error("刪除房間失敗: ", error);
+                        alert("刪除房間時發生錯誤，請檢查您的 Firebase 安全性規則或網路連線。");
+                    });
+
+                    /*
+                    // 舊的、有問題的程式碼：
                     db.collection('tables').doc(tableId).collection('messages').get().then(snapshot => {
                         const batch = db.batch();
                         snapshot.docs.forEach(doc => batch.delete(doc.ref));
                         return batch.commit();
                     }).then(() => {
-                        // 刪除房間主文件
                         return roomRef.delete();
                     }).then(() => {
                         alert('房間已成功刪除');
@@ -445,13 +456,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.error("刪除房間失敗: ", error);
                         alert("刪除房間時發生錯誤。");
                     });
+                    */
                 }
             };
 
-            // 這段不需要了，因為聊天室的顯示/隱藏已在上面處理
-            // if (isMember) {
-            //     setupChat(tableId, user);
-            // }
+            // 如果是成員，設定聊天室
+            if (isMember) {
+                setupChat(tableId, user);
+            }
 
         }, error => {
             console.error("查詢房間失敗: ", error);
