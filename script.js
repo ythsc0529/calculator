@@ -372,6 +372,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!user) return;
 
+        // 將聊天室設定移到 snapshot 之外，確保只執行一次
+        setupChat(tableId, user);
+
         if (roomUnsubscribe) roomUnsubscribe();
         roomUnsubscribe = roomRef.onSnapshot(doc => {
             if (!doc.exists) {
@@ -388,13 +391,15 @@ document.addEventListener('DOMContentLoaded', () => {
             // 更新房間資訊 (所有人可見)
             roomInfoEl.innerHTML = `<p><strong>縣市：</strong> ${table.city}</p><p><strong>地點：</strong> ${table.parlor}</p><p><strong>時間：</strong> ${table.time}</p><p><strong>大小：</strong> ${table.stakes}</p><p><strong>目前人數：</strong> ${table.members ? table.members.length : 0} / 4</p><p>請將以下房號告知您的朋友：</p><div class="room-id">${table.id}</div>`;
 
-            // 更新成員列表 (所有人可見)
+            // 更新成員列表 (所有人可見)，並標示房主
             roomMembersEl.innerHTML = '<h4>目前成員：</h4>';
             if (table.members && table.members.length > 0) {
                 table.members.forEach(member => {
                     const memberItem = document.createElement('div');
                     memberItem.className = 'member-item';
-                    memberItem.textContent = `玩家: ${member.name}`;
+                    const isRoomOwner = member.uid === table.ownerId;
+                    memberItem.textContent = `${isRoomOwner ? '' : '玩家: '}${member.name} ${isRoomOwner ? '<span style="color: var(--gold-color); font-weight: bold;">(房主)</span>' : ''}`;
+                    if(isRoomOwner) memberItem.innerHTML = memberItem.textContent; // 使用 innerHTML 來解析 span 標籤
                     roomMembersEl.appendChild(memberItem);
                 });
             }
@@ -443,10 +448,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
 
-            // 如果是成員，設定聊天室
-            if (isMember) {
-                setupChat(tableId, user);
-            }
+            // 這段不需要了，因為聊天室的顯示/隱藏已在上面處理
+            // if (isMember) {
+            //     setupChat(tableId, user);
+            // }
 
         }, error => {
             console.error("查詢房間失敗: ", error);
