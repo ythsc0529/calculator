@@ -277,23 +277,116 @@ document.addEventListener('DOMContentLoaded', () => {
     let roomUnsubscribe = null; // 用於取消房間監聽
     let messagesUnsubscribe = null; // 用於取消訊息監聽
 
-    function setupFinderFeatures(user) {
-        populateCities();
-        showCreateTableBtn.addEventListener('click', () => showFinderView('create'));
-        backToLobbyBtns.forEach(btn => btn.addEventListener('click', () => showFinderView('lobby')));
-        createTableForm.onsubmit = (e) => handleCreateTable(e, user); // 改用 onsubmit
-        joinByIdBtn.addEventListener('click', handleJoinById);
+    // --- 使用者房間狀態輔助 (userStates/{uid}) ---
+async function getUserCurrentRoom(uid) {
+    const doc = await db.collection('userStates').doc(uid).get();
+    return doc.exists ? (doc.data().currentRoomId || null) : null;
+}
 
-        // 離開頁面時取消監聽
-        window.addEventListener('beforeunload', () => {
-            if (lobbyUnsubscribe) lobbyUnsubscribe();
-            if (roomUnsubscribe) roomUnsubscribe();
-            if (messagesUnsubscribe) messagesUnsubscribe();
-        });
+function watchUserCurrentRoom(uid, callback) {
+    return db.collection('userStates').doc(uid).onSnapshot(snap => {
+        const roomId = snap.exists ? (snap.data().currentRoomId || null) : null;
+        callback(roomId);
+    });
+}
 
-        // 訂閱大廳資料
-        if (lobbyUnsubscribe) lobbyUnsubscribe(); // 取消舊的監聽
-        lobbyUnsubscribe = db.collection("tables").orderBy("createdAt", "desc").limit(20).onSnapshot((querySnapshot) => {
+// 原子加入（建立或加入房間皆可使用）
+async function enterRoomWithTransaction(tableId, user) {
+    const userRef = db.collection('userStates').doc(user.uid);
+    const tableRef = db.collection('tables').doc(tableId);
+
+    await db.runTransaction(async (tx) => {
+        const [userSnap, tableSnap] = await Promise.all([
+            tx.get(userRef),
+            tx.get(tableRef),
+        ]);
+        const currentRoomId = userSnap.exists ? (userSnap.data().currentRoomId || null) : null;
+        if (currentRoomId && currentRoomId !== tableId) {
+            throw new Error('您已在房間內，請先退出再加入其他房間。');
+        }
+        if (!tableSnap.exists) {
+            throw new Error('房間不存在或已被刪除。');
+        }
+        const table = tableSnap.data();
+        const members = Array.isArray(table.members) ? table.members.slice() : [];
+        if (members.some(m => m.uid === user.uid)) {
+            // 已是成員，只補 userStates
+            tx.set(userRef, { currentRoomId: tableId }, { merge: true });
+            return;
+        }
+        if (members.length >= 4) {
+            throw new Error('房間已滿。');
+        }
+        members.push({ uid: user.uid, name: user.displayName || user.email });
+
+        tx.update(tableRef, { members });
+        tx.set(userRef, { currentRoomId: tableId }, { merge: true });
+    });
+}
+
+// 原子退出
+async function exitRoomWithTransaction(tableId, user) {
+    const userRef = db.collection('userStates').doc(user.uid);
+    const tableRef = db.collection('tables').doc(tableId);
+
+    await db.runTransaction(async (tx) => {
+        const [userSnap, tableSnap] = await Promise.all([
+            tx.get(userRef),
+            tx.get(tableRef),
+        ]);
+        if (!tableSnap.exists) {
+            // 房間已不存在，直接清空 userStates
+            tx.set(userRef, { currentRoomId: firebase.firestore.FieldValue.delete() }, { merge: true });
+            return;
+        }
+        const table = tableSnap.data();
+        const members = Array.isArray(table.members) ? table.members.slice() : [];
+        const newMembers = members.filter(m => m.uid !== user.uid);
+
+        tx.update(tableRef, { members: newMembers });
+        tx.set(userRef, { currentRoomId: firebase.firestore.FieldValue.delete() }, { merge: true });
+    });
+}
+
+
+    async function setupFinderFeatures(user) {
+    populateCities();
+    showCreateTableBtn.addEventListener('click', () => showFinderView('create'));
+    backToLobbyBtns.forEach(btn => btn.addEventListener('click', () => showFinderView('lobby')));
+    createTableForm.onsubmit = (e) => handleCreateTable(e, user);
+    joinByIdBtn.addEventListener('click', handleJoinById);
+
+    // 監聽使用者目前房間狀態，動態導向 / 控制按鈕
+    let userStateUnsub = null;
+    if (userStateUnsub) userStateUnsub(); // 保險，避免重覆
+    userStateUnsub = watchUserCurrentRoom(user.uid, (roomId) => {
+        if (roomId) {
+            // 已在房間：直接顯示房間，禁用開桌與輸入房號加入
+            showRoomDetails(roomId);
+            showCreateTableBtn.disabled = true;
+            joinByIdBtn.disabled = true;
+        } else {
+            // 不在房間：回到大廳，開放開桌/加入
+            showFinderView('lobby');
+            showCreateTableBtn.disabled = false;
+            joinByIdBtn.disabled = false;
+        }
+    });
+
+    // 離開頁面時取消監聽
+    window.addEventListener('beforeunload', () => {
+        if (lobbyUnsubscribe) lobbyUnsubscribe();
+        if (roomUnsubscribe) roomUnsubscribe();
+        if (messagesUnsubscribe) messagesUnsubscribe();
+        if (userStateUnsub) userStateUnsub();
+    });
+
+    // 訂閱大廳資料
+    if (lobbyUnsubscribe) lobbyUnsubscribe();
+    lobbyUnsubscribe = db.collection("tables")
+        .orderBy("createdAt", "desc")
+        .limit(20)
+        .onSnapshot((querySnapshot) => {
             const tables = [];
             querySnapshot.forEach((doc) => {
                 tables.push({ id: doc.id, ...doc.data() });
@@ -303,7 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("讀取大廳資料失敗: ", error);
             tableListContainer.innerHTML = '<p style="color:red;">無法載入大廳資料，請檢查網路連線或 Firebase 設定。</p>';
         });
-    }
+}
 
     function showFinderView(viewName) {
         lobbyView.style.display = 'none';
@@ -328,196 +421,231 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderLobby(tables) { tableListContainer.innerHTML = ''; if (tables.length === 0) { tableListContainer.innerHTML = '<p>目前沒有任何牌桌，快來開第一桌吧！</p>'; return; } tables.forEach(table => { const entry = document.createElement('div'); entry.className = 'table-entry'; entry.innerHTML = `<div class="table-info"><div class="location">${table.city}</div><div class="parlor">${table.parlor}</div></div><div class="table-details"><span class="table-stakes">${table.stakes}</span><span class="table-time">時間: ${table.time}</span></div><div class="table-players"><span class="player-count">${table.members ? table.members.length : 0}/4</span></div>`; entry.addEventListener('click', () => showRoomDetails(table.id)); tableListContainer.appendChild(entry); }); }
     
     async function handleCreateTable(event, user) {
-        event.preventDefault();
-        
-        const generateShortId = async () => {
-            let id;
-            let exists = true;
-            while (exists) {
-                id = Math.floor(100000 + Math.random() * 900000).toString();
-                const docRef = db.collection("tables").doc(id);
-                const docSnap = await docRef.get();
-                exists = docSnap.exists;
-            }
-            return id;
-        };
+    event.preventDefault();
 
-        const shortId = await generateShortId();
-        const citySelect = document.getElementById('city-select');
-        const tableData = {
-            city: citySelect.value,
-            parlor: document.getElementById('parlor-name-input').value,
-            time: document.getElementById('play-time-input').value,
-            stakes: document.querySelector('input[name="stakes"]:checked').value,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            ownerId: user.uid,
-            members: [{ uid: user.uid, name: user.displayName || user.email }]
-        };
-
-        db.collection("tables").doc(shortId).set(tableData).then(() => {
-            alert(`開桌成功！您的房號是：${shortId}`);
-            showRoomDetails(shortId);
-        }).catch((error) => {
-            console.error("開桌失敗: ", error);
-            alert("開桌失敗，請稍後再試。");
-        });
+    // 若已在房間，阻擋
+    const currentRoom = await getUserCurrentRoom(user.uid);
+    if (currentRoom) {
+        alert(`您已在房間 ${currentRoom}，請先退出再開桌。`);
+        showRoomDetails(currentRoom);
+        return;
     }
+
+    const generateShortId = async () => {
+        let id;
+        let exists = true;
+        while (exists) {
+            id = Math.floor(100000 + Math.random() * 900000).toString();
+            const docRef = db.collection("tables").doc(id);
+            const docSnap = await docRef.get();
+            exists = docSnap.exists;
+        }
+        return id;
+    };
+
+    const shortId = await generateShortId();
+    const citySelect = document.getElementById('city-select');
+    const tableRef = db.collection("tables").doc(shortId);
+    const userRef = db.collection('userStates').doc(user.uid);
+
+    const tableData = {
+        city: citySelect.value,
+        parlor: document.getElementById('parlor-name-input').value,
+        time: document.getElementById('play-time-input').value,
+        stakes: document.querySelector('input[name="stakes"]:checked').value,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        ownerId: user.uid,
+        members: [{ uid: user.uid, name: user.displayName || user.email }]
+    };
+
+    try {
+        await db.runTransaction(async (tx) => {
+            const userSnap = await tx.get(userRef);
+            const currentRoomId = userSnap.exists ? (userSnap.data().currentRoomId || null) : null;
+            if (currentRoomId) {
+                throw new Error('您已在房間內，請先退出再開桌。');
+            }
+            tx.set(tableRef, tableData);
+            tx.set(userRef, { currentRoomId: shortId }, { merge: true });
+        });
+
+        alert(`開桌成功！您的房號是：${shortId}`);
+        showRoomDetails(shortId);
+    } catch (error) {
+        console.error("開桌失敗: ", error);
+        alert(error.message || "開桌失敗，請稍後再試。");
+    }
+}
 
     function handleJoinById() { const roomId = joinRoomIdInput.value.trim(); if (!roomId) return; showRoomDetails(roomId); joinRoomIdInput.value = ''; }
     
     function showRoomDetails(tableId) {
-        showFinderView('room');
-        const roomRef = db.collection("tables").doc(tableId);
-        const user = firebase.auth().currentUser;
+    showFinderView('room');
+    const roomRef = db.collection("tables").doc(tableId);
+    const user = firebase.auth().currentUser;
+    if (!user) return;
 
-        if (!user) return;
+    // 先清掉舊的房間監聽與訊息監聽
+    if (roomUnsubscribe) { roomUnsubscribe(); roomUnsubscribe = null; }
+    if (messagesUnsubscribe) { messagesUnsubscribe(); messagesUnsubscribe = null; }
 
-        // 將聊天室設定移到 snapshot 之外，確保只執行一次
-        setupChat(tableId, user);
-
-        if (roomUnsubscribe) roomUnsubscribe();
-        roomUnsubscribe = roomRef.onSnapshot(doc => {
-            if (!doc.exists) {
-                alert('找不到該房號，或房主已解散。');
-                showFinderView('lobby');
-                return;
+    roomUnsubscribe = roomRef.onSnapshot(async doc => {
+        if (!doc.exists) {
+            // 房間消失：如果我以為自己在這房間，清掉 userStates
+            const current = await getUserCurrentRoom(user.uid);
+            if (current === tableId) {
+                await db.collection('userStates').doc(user.uid).set(
+                    { currentRoomId: firebase.firestore.FieldValue.delete() }, { merge: true }
+                );
             }
-
-            const table = { id: doc.id, ...doc.data() };
-            const isMember = table.members && table.members.some(m => m.uid === user.uid);
-            const isOwner = table.ownerId === user.uid;
-            const isFull = table.members && table.members.length >= 4;
-
-            // 更新房間資訊 (所有人可見)
-            roomInfoEl.innerHTML = `<p><strong>縣市：</strong> ${table.city}</p><p><strong>地點：</strong> ${table.parlor}</p><p><strong>時間：</strong> ${table.time}</p><p><strong>大小：</strong> ${table.stakes}</p><p><strong>目前人數：</strong> ${table.members ? table.members.length : 0} / 4</p><p>請將以下房號告知您的朋友：</p><div class="room-id">${table.id}</div>`;
-
-            // 更新成員列表 (所有人可見)，並標示房主
-            roomMembersEl.innerHTML = '<h4>目前成員：</h4>';
-            if (table.members && table.members.length > 0) {
-                table.members.forEach(member => {
-                    const memberItem = document.createElement('div');
-                    memberItem.className = 'member-item';
-                    const isRoomOwner = member.uid === table.ownerId;
-                    memberItem.textContent = `${isRoomOwner ? '' : '玩家: '}${member.name} ${isRoomOwner ? '<span style="color: var(--gold-color); font-weight: bold;">(房主)</span>' : ''}`;
-                    if(isRoomOwner) memberItem.innerHTML = memberItem.textContent; // 使用 innerHTML 來解析 span 標籤
-                    roomMembersEl.appendChild(memberItem);
-                });
-            }
-
-            // 更新按鈕和聊天室的顯示邏輯
-            joinRoomBtn.style.display = !isMember && !isFull ? 'block' : 'none';
-            leaveRoomBtn.style.display = isMember && !isOwner ? 'block' : 'none';
-            deleteRoomBtn.style.display = isOwner ? 'block' : 'none';
-            chatBox.style.display = isMember ? 'block' : 'none';
-
-            // 設定按鈕事件 (使用 .onclick 避免重複綁定)
-            joinRoomBtn.onclick = () => {
-                roomRef.update({
-                    members: firebase.firestore.FieldValue.arrayUnion({ uid: user.uid, name: user.displayName || user.email })
-                });
-            };
-
-            leaveRoomBtn.onclick = () => {
-                if (confirm('確定要退出這個房間嗎？')) {
-                    roomRef.update({
-                        members: firebase.firestore.FieldValue.arrayRemove({ uid: user.uid, name: user.displayName || user.email })
-                    }).then(() => {
-                        alert('您已退出房間。');
-                        showFinderView('lobby'); // 退出後返回大廳
-                    });
-                }
-            };
-
-            deleteRoomBtn.onclick = () => {
-                if (confirm('確定要刪除這個房間嗎？此動作無法復原。')) {
-                    
-                    // 我們不再嘗試從客戶端刪除子集合，以避免權限問題。
-                    // 直接刪除房間文件。
-                    roomRef.delete().then(() => {
-                        alert('房間已成功刪除');
-                        showFinderView('lobby');
-                    }).catch(error => {
-                        console.error("刪除房間失敗: ", error);
-                        alert("刪除房間時發生錯誤，請檢查您的 Firebase 安全性規則或網路連線。");
-                    });
-
-                    /*
-                    // 舊的、有問題的程式碼：
-                    db.collection('tables').doc(tableId).collection('messages').get().then(snapshot => {
-                        const batch = db.batch();
-                        snapshot.docs.forEach(doc => batch.delete(doc.ref));
-                        return batch.commit();
-                    }).then(() => {
-                        return roomRef.delete();
-                    }).then(() => {
-                        alert('房間已成功刪除');
-                        showFinderView('lobby');
-                    }).catch(error => {
-                        console.error("刪除房間失敗: ", error);
-                        alert("刪除房間時發生錯誤。");
-                    });
-                    */
-                }
-            };
-
-            // 如果是成員，設定聊天室
-            if (isMember) {
-                setupChat(tableId, user);
-            }
-
-        }, error => {
-            console.error("查詢房間失敗: ", error);
-            alert("查詢失敗，請稍後再試。");
+            alert('找不到該房號，或房主已解散。');
             showFinderView('lobby');
-        });
-    }
-
-    function setupChat(tableId, user) {
-        // 如果已有監聽，先取消
-        if (messagesUnsubscribe) {
-            messagesUnsubscribe();
+            return;
         }
 
-        messagesUnsubscribe = db.collection('tables').doc(tableId).collection('messages')
-            .orderBy('timestamp', 'asc')
-            .limitToLast(50) // 限制最多讀取50條訊息
-            .onSnapshot(snapshot => {
-                const messagesContainer = document.getElementById('messages-container');
-                messagesContainer.innerHTML = '';
-                snapshot.forEach(doc => {
-                    const message = doc.data();
-                    const messageEl = document.createElement('div');
-                    messageEl.classList.add('message');
-                    if (message.senderId === user.uid) {
-                        messageEl.classList.add('own-message');
-                    }
-                    messageEl.textContent = `${message.senderName || '玩家'}: ${message.text}`;
-                    messagesContainer.appendChild(messageEl);
-                });
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            });
+        const table = { id: doc.id, ...doc.data() };
+        const isMember = table.members && table.members.some(m => m.uid === user.uid);
+        const isOwner = table.ownerId === user.uid;
+        const isFull = table.members && table.members.length >= 4;
 
-        // 使用 .onclick 確保只有一個監聽器
-        sendMessageBtn.onclick = () => {
-            const text = messageInput.value.trim();
-            if (text) {
-                db.collection('tables').doc(tableId).collection('messages').add({
-                    text: text,
-                    senderId: user.uid,
-                    senderName: user.displayName || user.email,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                messageInput.value = '';
+        // 房間資訊
+        roomInfoEl.innerHTML = `
+            <p><strong>縣市：</strong> ${table.city}</p>
+            <p><strong>地點：</strong> ${table.parlor}</p>
+            <p><strong>時間：</strong> ${table.time}</p>
+            <p><strong>大小：</strong> ${table.stakes}</p>
+            <p><strong>目前人數：</strong> ${table.members ? table.members.length : 0} / 4</p>
+            <p>請將以下房號告知您的朋友：</p>
+            <div class="room-id">${table.id}</div>
+        `;
+
+        // 成員清單（標註房主）
+        roomMembersEl.innerHTML = '<h4>目前成員：</h4>';
+        if (table.members && table.members.length > 0) {
+            table.members.forEach(member => {
+                const memberItem = document.createElement('div');
+                memberItem.className = 'member-item';
+                const isRoomOwner = member.uid === table.ownerId;
+                memberItem.innerHTML = isRoomOwner
+                    ? `${member.name} <span style="color: var(--gold-color); font-weight: bold;">(房主)</span>`
+                    : `玩家: ${member.name}`;
+                roomMembersEl.appendChild(memberItem);
+            });
+        }
+
+        // 顯示/隱藏按鈕/聊天室
+        joinRoomBtn.style.display = (!isMember && !isFull) ? 'block' : 'none';
+        leaveRoomBtn.style.display = (isMember && !isOwner) ? 'block' : 'none';
+        deleteRoomBtn.style.display = isOwner ? 'block' : 'none';
+        chatBox.style.display = isMember ? 'block' : 'none';
+
+        // 重新綁定按鈕（使用交易）
+        joinRoomBtn.onclick = async () => {
+            try {
+                await enterRoomWithTransaction(table.id, user);
+            } catch (err) {
+                alert(err.message || '加入房間失敗');
             }
         };
-        
-        // 允許 Enter 送出
-        messageInput.onkeyup = (event) => {
-            if (event.key === 'Enter') {
-                sendMessageBtn.click();
+
+        leaveRoomBtn.onclick = async () => {
+            if (confirm('確定要退出這個房間嗎？')) {
+                try {
+                    await exitRoomWithTransaction(table.id, user);
+                    alert('您已退出房間。');
+                    showFinderView('lobby');
+                } catch (err) {
+                    alert(err.message || '退出失敗，請稍後重試');
+                }
             }
         };
+
+        deleteRoomBtn.onclick = async () => {
+            if (!isOwner) return;
+            if (confirm('確定要刪除這個房間嗎？此動作無法復原。')) {
+                try {
+                    // 只清自己的 userStates；其他成員下次進入會自動清理
+                    await db.collection('userStates').doc(user.uid).set(
+                        { currentRoomId: firebase.firestore.FieldValue.delete() }, { merge: true }
+                    );
+                    await roomRef.delete();
+                    alert('房間已成功刪除');
+                    showFinderView('lobby');
+                } catch (error) {
+                    console.error("刪除房間失敗: ", error);
+                    alert("刪除房間時發生錯誤，請檢查您的 Firebase 安全性規則或網路連線。");
+                }
+            }
+        };
+
+        // 僅在是成員時初始化聊天（避免重覆）
+        if (isMember) {
+            setupChat(table.id, user);
+        } else {
+            // 不是成員就關閉訊息監聽
+            if (messagesUnsubscribe) { messagesUnsubscribe(); messagesUnsubscribe = null; }
+        }
+    }, error => {
+        console.error("查詢房間失敗: ", error);
+        alert("查詢失敗，請稍後再試。");
+        showFinderView('lobby');
+    });
+}
+
+    function setupChat(tableId, user) {
+    // 關閉舊監聽
+    if (messagesUnsubscribe) {
+        messagesUnsubscribe();
+        messagesUnsubscribe = null;
     }
+
+    const messagesContainer = document.getElementById('messages-container');
+    if (!messagesContainer) {
+        console.warn('messages-container 不存在，無法顯示聊天室訊息。');
+        return;
+    }
+
+    // 監聽訊息
+    messagesUnsubscribe = db.collection('tables').doc(tableId).collection('messages')
+        .orderBy('timestamp', 'asc')
+        .limitToLast(50)
+        .onSnapshot(snapshot => {
+            messagesContainer.innerHTML = '';
+            snapshot.forEach(doc => {
+                const message = doc.data();
+                const messageEl = document.createElement('div');
+                messageEl.classList.add('message');
+                if (message.senderId === user.uid) {
+                    messageEl.classList.add('own-message');
+                }
+                messageEl.textContent = `${message.senderName || '玩家'}: ${message.text}`;
+                messagesContainer.appendChild(messageEl);
+            });
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        });
+
+    // 送出按鈕（覆蓋一次）
+    sendMessageBtn.onclick = () => {
+        const text = messageInput.value.trim();
+        if (!text) return;
+        db.collection('tables').doc(tableId).collection('messages').add({
+            text,
+            senderId: user.uid,
+            senderName: user.displayName || user.email,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        messageInput.value = '';
+    };
+
+    // Enter 送出 + 阻止表單提交
+    messageInput.onkeydown = (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            sendMessageBtn.click();
+        }
+    };
+}
+
     // --- 通用函式 ---
     function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
     function setupModals(){document.querySelectorAll(".modal").forEach(e=>{e.querySelector(".close-btn").addEventListener("click",()=>closeModal(e)),window.addEventListener("click",t=>{t.target===e&&closeModal(e)})})}
