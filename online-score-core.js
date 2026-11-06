@@ -13,6 +13,9 @@
         if (!Number.isInteger(room.base) || !Number.isInteger(room.taiValue) || room.base < 0 || room.taiValue < 0) {
             throw new Error('牌局計分設定無效。');
         }
+        if (room.scoreLimit != null && (!Number.isSafeInteger(room.scoreLimit) || room.scoreLimit <= 0)) {
+            throw new Error('牌局輸分上限無效。');
+        }
         if (!WINDS.includes(room.dealerWind)
             || new Set(room.members.map(member => member.uid)).size !== room.members.length
             || new Set(room.members.map(member => member.wind)).size !== room.members.length
@@ -23,6 +26,7 @@
 
     function applyRound(room, action) {
         assertRoom(room);
+        if (room.phase && room.phase !== 'playing') throw new Error('目前不是進行中的牌局。');
         if (room.members.length !== 4) throw new Error('四位玩家到齊後才能開始計分。');
         if (room.history.length >= MAX_ROUNDS) throw new Error('這桌的紀錄已滿，請另開新桌。');
         if (!['hu', 'zimo'].includes(action.kind)) throw new Error('計分類型無效。');
@@ -70,7 +74,34 @@
             deltas,
             at: action.at || Date.now()
         });
-        return { members, history };
+        return { members, history, reachedLimit: limitReached({ ...room, members }) };
+    }
+
+    function limitReached(room) {
+        return Number.isInteger(room.scoreLimit) && room.scoreLimit > 0
+            && room.members.some(member => member.score <= -room.scoreLimit);
+    }
+
+    function settle(room) {
+        assertRoom(room);
+        const debtors = room.members.filter(member => member.score < 0)
+            .map(member => ({ name: `${member.wind}位 ${member.name}`, remaining: -member.score }));
+        const creditors = room.members.filter(member => member.score > 0)
+            .map(member => ({ name: `${member.wind}位 ${member.name}`, remaining: member.score }));
+        const payments = [];
+        let debtorIndex = 0;
+        let creditorIndex = 0;
+        while (debtorIndex < debtors.length && creditorIndex < creditors.length) {
+            const debtor = debtors[debtorIndex];
+            const creditor = creditors[creditorIndex];
+            const amount = Math.min(debtor.remaining, creditor.remaining);
+            payments.push({ from: debtor.name, to: creditor.name, amount });
+            debtor.remaining -= amount;
+            creditor.remaining -= amount;
+            if (debtor.remaining === 0) debtorIndex++;
+            if (creditor.remaining === 0) creditorIndex++;
+        }
+        return payments;
     }
 
     function undoLast(room, actorUid) {
@@ -90,5 +121,5 @@
         return { members, history };
     }
 
-    return { WINDS, MAX_ROUNDS, applyRound, undoLast };
+    return { WINDS, MAX_ROUNDS, applyRound, undoLast, limitReached, settle };
 });

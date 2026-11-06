@@ -252,6 +252,92 @@ input:focus, select:focus { outline: none; border-color: #59675b; box-shadow: 0 
 .online-action-error { min-height: 1em; margin: 0; color: #a74d3d; font-size: 12px; }
 .online-action-form button { align-self: flex-start; }
 
+/* Online room flow */
+body.online-session .site-header nav,
+body.online-session .header-actions,
+body.online-session .score-mode-switch,
+body.online-session #counter-section > .section-heading { display: none !important; }
+body.online-session main { max-width: 1300px; padding-top: 28px; }
+.online-input-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.online-check-row { flex-direction: row !important; align-items: center; gap: 9px !important; margin-top: 3px; cursor: pointer; }
+.online-check-row input { width: auto; accent-color: #53694a; }
+.online-check-row span { color: #334135; }
+.online-flow-page { min-height: min(740px,calc(100vh - 150px)); overflow: hidden; border: 1px solid #252d26; border-radius: 18px; background: #1b211d; color: #eef2e9; animation: board-enter .55s var(--ease) both; }
+.online-flow-page button { transition: background .25s var(--ease), border-color .25s var(--ease), transform .35s var(--ease), opacity .25s ease; }
+.online-flow-page button:hover:not(:disabled) { transform: translateY(-2px); }
+.online-flow-page button:disabled { opacity: .43; cursor: not-allowed; }
+#online-waiting { display: grid; grid-template-columns: minmax(0,1.2fr) minmax(320px,.8fr); }
+.online-waiting-copy { display: flex; flex-direction: column; align-items: flex-start; padding: clamp(30px,5vw,72px); }
+.online-waiting-copy h3 { margin: 28px 0 15px; font-size: clamp(40px,5.4vw,80px); font-weight: 600; line-height: 1.08; letter-spacing: -.055em; }
+.online-waiting-copy > p { margin: 0; color: #b0bcb0; font-size: 14px; }
+.online-waiting-code { margin-top: 37px; color: #9aa99c; font-size: 12px; }
+.online-waiting-code strong { display: block; margin-top: 4px; color: #e4f4b5; font-size: clamp(33px,5vw,59px); font-weight: 650; letter-spacing: .16em; font-variant-numeric: tabular-nums; }
+.online-waiting-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: auto; padding-top: 38px; }
+.online-waiting-actions button, #online-finished-exit-btn { border-color: #d7eb9e; background: #d7eb9e; color: #1c251a; }
+.online-waiting-actions button:hover:not(:disabled), #online-finished-exit-btn:hover:not(:disabled) { border-color: #e6f4bc; background: #e6f4bc; }
+.online-flow-page .online-quiet-btn, #online-game-exit-btn { border: 1px solid rgba(255,255,255,.19); background: transparent; color: #d9e1d7; }
+.online-flow-page .online-quiet-btn:hover:not(:disabled), #online-game-exit-btn:hover:not(:disabled) { background: rgba(255,255,255,.08); }
+.online-waiting-side { display: flex; flex-direction: column; gap: 22px; padding: 39px; border-left: 1px solid rgba(255,255,255,.1); background: #222a23; }
+.online-qr-shell { align-self: flex-start; padding: 11px; border-radius: 13px; background: #fff; color: #56635a; text-align: center; }
+#online-qr { display: grid; place-items: center; width: 204px; height: 204px; color: #657064; font-size: 12px; }
+#online-qr svg { display: block; width: 100%; height: 100%; }
+.online-qr-shell p { margin: 7px 0 3px; font-size: 11px; }
+.online-waiting-seats { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.online-waiting-seat { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 13px 12px; border: 1px solid rgba(255,255,255,.11); border-radius: 8px; color: #8a988b; }
+.online-waiting-seat.is-filled { border-color: rgba(215,235,158,.3); color: #e9f0e5; }
+.online-waiting-seat span { display: grid; place-items: center; flex: none; width: 26px; height: 26px; border: 1px solid currentColor; border-radius: 5px; font-size: 11px; }
+.online-waiting-seat strong { overflow: hidden; font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.online-waiting-stake { margin: auto 0 0; color: #95a496; font-size: 11px; }
+#online-room.online-game { display: flex; flex-direction: column; justify-content: space-between; border-radius: 18px; }
+.online-game-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; padding: 26px 35px; }
+.online-game-top > div { display: flex; align-items: center; gap: 15px; }
+.online-game-top button { padding: 8px 11px; font-size: 11px; }
+.online-game-center { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; padding: 20px; text-align: center; }
+.online-game-center > p { margin: 18px 0 0; color: #aebbad; font-size: 15px; }
+.online-my-score { color: #eef3e7; font-size: clamp(100px,20vw,245px); font-weight: 600; line-height: 1.06; letter-spacing: -.09em; font-variant-numeric: tabular-nums; }
+.online-my-score.positive { color: #daf0a4; }
+.online-my-score.negative { color: #f3b19f; }
+.online-my-score.is-long { font-size: clamp(52px,11vw,128px); }
+.online-game-meta { color: #8f9c91; font-size: 11px; letter-spacing: .02em; }
+.online-game-actions { display: flex; justify-content: center; gap: 10px; padding: 10px 30px 25px; }
+.online-game-actions button { min-width: 170px; padding: 14px 24px; border-color: #d7eb9e; background: #d7eb9e; color: #172017; font-size: 14px; }
+.online-game-actions button:hover:not(:disabled) { background: #e5f3bc; }
+.online-game-tools { display: flex; justify-content: center; flex-wrap: wrap; gap: 9px; padding: 18px 22px 22px; border-top: 1px solid rgba(255,255,255,.1); }
+.online-game-tools button { border-color: rgba(255,255,255,.19); background: transparent; color: #c4cfc3; font-size: 11px; }
+.online-game-tools button:hover:not(:disabled) { background: rgba(255,255,255,.08); }
+.online-finished { padding: clamp(28px,5vw,65px); }
+.online-finished h3 { margin: 12px 0 6px; font-size: clamp(38px,5vw,67px); font-weight: 600; letter-spacing: -.05em; }
+.online-finished > p { margin: 0 0 28px; color: #a5b4a5; font-size: 13px; }
+.online-finished h4 { margin: 30px 0 13px; color: #c9d5c8; font-size: 13px; font-weight: 600; }
+.online-final-scores { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; }
+.online-final-scores > div { display: flex; flex-direction: column; gap: 18px; padding: 21px; border: 1px solid rgba(255,255,255,.13); border-radius: 9px; background: #262d27; }
+.online-final-scores span { color: #b4c0b1; font-size: 12px; }
+.online-final-scores strong { font-size: clamp(32px,4vw,57px); font-weight: 600; letter-spacing: -.06em; }
+.online-final-scores strong.positive { color: #d7eb9e; }
+.online-final-scores strong.negative { color: #f3b19f; }
+.online-payments { max-width: 650px; }
+.online-payments > div { display: flex; justify-content: space-between; gap: 16px; padding: 13px 0; border-bottom: 1px solid rgba(255,255,255,.12); color: #c5d0c1; font-size: 13px; }
+.online-payments strong { color: #e4f4b5; font-weight: 600; }
+.online-payments p { color: #9fac9b; font-size: 13px; }
+#online-finished-exit-btn { margin-top: 29px; }
+.online-wide-modal .modal-content { width: min(94%,920px); }
+.online-wide-modal h3, .online-calculator-modal h3 { margin: 0 0 17px; font-size: 23px; }
+.online-wide-modal .online-room-settings { padding: 10px 0 18px; color: #657166; }
+.online-wide-modal .online-room-settings label { color: #59655b; }
+.online-wide-modal .online-room-settings select { border-color: #cfd7cd; background: #f4f7f1; color: #263125; }
+.online-wide-modal .online-players { padding: 0; }
+.online-wide-modal .online-player-card { min-height: 145px; }
+.online-wide-modal .online-history-heading { padding: 20px 0 8px; }
+.online-wide-modal .online-history-heading h3 { color: #2d382e; }
+.online-wide-modal .online-history-heading button { border-color: #d8e0d5; color: #546354; }
+.online-wide-modal .online-history { padding: 0; }
+.online-wide-modal .online-history .score-empty { color: #748173; }
+.online-wide-modal .online-history-row { border-color: #e6ebe4; }
+.online-wide-modal .online-history-row strong { color: #303b31; }
+.online-wide-modal .online-history-row > span:last-child { color: #758173; }
+.online-calculator-modal .modal-content { width: min(96%,1120px); max-height: 91vh; margin: 4vh auto; }
+#online-calculator-body .calculator-layout { margin: 0; }
+
 /* Remaining tools use the same restrained surfaces. */
 .dice-roller-container { padding: 55px 22px 28px; text-align: center; }
 .dice-container { gap: 12px; }
@@ -317,6 +403,8 @@ input:focus, select:focus { outline: none; border-color: #59675b; box-shadow: 0 
   .scoreboard .score { font-size: 58px; }
   .online-players { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .online-player-card { min-height: 155px; }
+  #online-waiting { grid-template-columns: 1fr minmax(300px,.85fr); }
+  .online-final-scores { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .fortune-card { grid-template-columns: repeat(3,1fr); }
   .fortune-card h3 { grid-column: 1/-1; }
 }
@@ -333,6 +421,14 @@ input:focus, select:focus { outline: none; border-color: #59675b; box-shadow: 0 
   .online-action-bar { align-items: stretch; flex-direction: column; }
   .online-action-bar > div:last-child { width: 100%; }
   .online-action-bar button { flex: 1; }
+  #online-waiting { grid-template-columns: 1fr; }
+  .online-waiting-copy { min-height: 340px; padding: 34px; }
+  .online-waiting-copy h3 { margin-top: 18px; font-size: clamp(42px,8vw,64px); }
+  .online-waiting-side { flex-direction: row; align-items: center; flex-wrap: wrap; padding: 27px 34px; border-top: 1px solid rgba(255,255,255,.1); border-left: 0; }
+  .online-waiting-seats { flex: 1; min-width: 220px; }
+  .online-waiting-stake { width: 100%; }
+  .online-flow-page { min-height: 0; }
+  #online-room.online-game { min-height: calc(100vh - 150px); }
 }
 @media (max-width: 540px) {
   .header-inner { min-height: 58px; }
@@ -377,6 +473,32 @@ input:focus, select:focus { outline: none; border-color: #59675b; box-shadow: 0 
   .online-history-row { grid-template-columns: 26px minmax(0,1fr); gap: 2px 7px; }
   .online-history-row > span:last-child { grid-column: 2; text-align: left; }
   .online-loser-choices { grid-template-columns: 1fr; }
+  body.online-session main { padding: 16px 12px 30px; }
+  .online-input-pair { grid-template-columns: 1fr 1fr; }
+  .online-waiting-copy { min-height: 0; padding: 27px 22px; }
+  .online-waiting-copy h3 { font-size: 42px; }
+  .online-waiting-code { margin-top: 25px; }
+  .online-waiting-actions { width: 100%; padding-top: 28px; }
+  .online-waiting-actions button { flex: 1; min-width: 130px; }
+  .online-waiting-side { justify-content: center; gap: 18px; padding: 20px; }
+  .online-qr-shell { align-self: center; }
+  .online-waiting-seats { flex-basis: 100%; }
+  .online-game-top { align-items: flex-start; flex-direction: column; gap: 12px; padding: 19px; }
+  .online-game-top > div { flex-wrap: wrap; }
+  .online-game-center { padding: 14px; }
+  .online-game-center > p { font-size: 13px; }
+  .online-my-score { font-size: clamp(92px,24vw,150px); }
+  .online-my-score.is-long { font-size: clamp(43px,10vw,70px); }
+  .online-game-actions { padding: 0 18px 18px; }
+  .online-game-actions button { flex: 1; min-width: 0; padding: 13px 10px; }
+  .online-game-tools { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); padding: 15px; }
+  .online-game-tools button { min-width: 0; padding: 10px 6px; }
+  .online-finished { padding: 26px 20px; }
+  .online-final-scores > div { padding: 15px; }
+  .online-final-scores strong { font-size: 37px; }
+  .online-wide-modal .online-room-settings { align-items: flex-start; }
+  .online-wide-modal .online-player-card { min-height: 125px; }
+  .online-wide-modal .online-score { font-size: 36px; }
   .fortune-card { display: block; }
   .fortune-card h3 { margin-bottom: 13px; }
   .fortune-item { margin: 8px 0; }
@@ -387,6 +509,8 @@ input:focus, select:focus { outline: none; border-color: #59675b; box-shadow: 0 
 }
 @media (max-width: 370px) {
   .tile-selection-grid { grid-template-columns: repeat(6,minmax(0,1fr)); }
+  .online-input-pair { grid-template-columns: 1fr; }
+  .online-game-tools { grid-template-columns: 1fr; }
   .scoreboard .player-box { padding: 10px; }
   .scoreboard .score { font-size: 32px; }
   .scoreboard-buttons button { min-width: 0; padding: 10px 7px; }

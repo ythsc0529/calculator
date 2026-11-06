@@ -7,7 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const status = document.getElementById('online-status');
     const authPanel = document.getElementById('online-auth');
     const lobby = document.getElementById('online-lobby');
+    const waitingPanel = document.getElementById('online-waiting');
     const roomPanel = document.getElementById('online-room');
+    const finishedPanel = document.getElementById('online-finished');
     const createForm = document.getElementById('online-create-form');
     const joinForm = document.getElementById('online-join-form');
     const roomCodeInput = document.getElementById('online-room-code-input');
@@ -20,6 +22,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const actionBody = document.getElementById('online-action-body');
     const wakeButton = document.getElementById('online-wake-btn');
     const resumePanel = document.getElementById('online-resume');
+    const othersModal = document.getElementById('online-others-modal');
+    const calculatorModal = document.getElementById('online-calculator-modal');
+    const calculatorLayout = document.querySelector('#calculator-section .calculator-layout');
+    const calculatorHome = calculatorLayout.parentElement;
+    const calculatorNext = calculatorLayout.nextSibling;
 
     let database = null;
     let currentUser = null;
@@ -32,6 +39,18 @@ document.addEventListener('DOMContentLoaded', () => {
     let wantsWakeLock = false;
     let wakeSentinel = null;
     let reconnectTimer = null;
+    let qrJoinTried = false;
+    let renderedQrCode = null;
+
+    function phaseOf(room) {
+        return room.phase || (room.history?.length ? 'playing' : 'waiting');
+    }
+    function setSessionLocked(locked) {
+        document.body.classList.toggle('online-session', locked);
+    }
+    function joinUrl(code) {
+        return `${location.origin}${location.pathname}${location.search}#score=${code}`;
+    }
 
     function storedCode() {
         if (!currentUser) return null;
@@ -51,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     function message(error) {
         if (error?.code === 'permission-denied' || error?.code === 403 || /\b403\b/.test(error?.message || '')) {
-            return '連線計分的資料庫權限尚未開放（403）。請發布包含 scoreRooms 的 Firestore 規則。';
+            return '連線計分權限遭拒（403）。請在 Firebase 控制台發布最新的 firestore.rules。';
         }
         if (error?.code === 'unavailable') return '目前無法連線，恢復網路後請重試。';
         if (error?.code === 'unauthenticated') return '登入已失效，請重新登入。';
@@ -71,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateActions();
     }
     function setMode(isOnline) {
-        if (busy) return;
+        if (busy || (currentCode && !isOnline)) return;
         localPanel.hidden = isOnline;
         onlinePanel.hidden = !isOnline;
         localTab.classList.toggle('active', !isOnline);
@@ -82,13 +101,22 @@ document.addEventListener('DOMContentLoaded', () => {
         else {
             stopListening();
             closeActionModal();
+            closeOthersModal();
+            closeCalculatorModal();
             releaseWakeLock();
         }
     }
     function showLobby() {
         authPanel.hidden = true;
         lobby.hidden = false;
+        waitingPanel.hidden = true;
         roomPanel.hidden = true;
+        finishedPanel.hidden = true;
+        setSessionLocked(false);
+        closeActionModal(true);
+        closeOthersModal();
+        closeCalculatorModal();
+        releaseWakeLock();
         resumePanel.hidden = !storedCode();
         const sharedCode = hashCode();
         if (sharedCode) roomCodeInput.value = sharedCode;
@@ -98,7 +126,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (location.protocol === 'file:') {
             authPanel.hidden = false;
             lobby.hidden = true;
+            waitingPanel.hidden = true;
             roomPanel.hidden = true;
+            finishedPanel.hidden = true;
             document.getElementById('online-login-btn').disabled = true;
             setStatus('四人連線需從同一個 HTTPS 網站開啟；直接開本機 HTML 可使用單機模式。', 'warning');
             return;
@@ -106,7 +136,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!database || !core) {
             authPanel.hidden = false;
             lobby.hidden = true;
+            waitingPanel.hidden = true;
             roomPanel.hidden = true;
+            finishedPanel.hidden = true;
             document.getElementById('online-login-btn').disabled = true;
             setStatus('Firebase 尚未載入，請確認網路連線與網站設定。', 'warning');
             return;
@@ -114,20 +146,28 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!currentUser) {
             authPanel.hidden = false;
             lobby.hidden = true;
+            waitingPanel.hidden = true;
             roomPanel.hidden = true;
+            finishedPanel.hidden = true;
             setStatus('請先登入，再建立或加入牌局。');
             return;
         }
         authPanel.hidden = true;
         if (currentCode) {
             lobby.hidden = true;
-            roomPanel.hidden = false;
+            setSessionLocked(true);
             if (!unsubscribeRoom) listenToRoom(currentCode);
             return;
         }
         showLobby();
         if (!autoRestoreDone) {
             autoRestoreDone = true;
+            const shared = hashCode();
+            if (shared && !qrJoinTried) {
+                qrJoinTried = true;
+                const name = userName(document.getElementById('online-join-name'));
+                if (name) { joinRoomByCode(shared, name); return; }
+            }
             const saved = storedCode();
             if (saved) openRoom(saved);
         }
@@ -160,7 +200,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!currentUser || !database || busy) return;
         const name = userName(document.getElementById('online-create-name'));
         if (!name) return setStatus('請先輸入你的稱呼。', 'warning');
-        const [base, taiValue] = document.getElementById('online-stake').value.split('/').map(Number);
+        const base = Number(document.getElementById('online-base').value);
+        const taiValue = Number(document.getElementById('online-tai-value').value);
+        const limitEnabled = document.getElementById('online-limit-enabled').checked;
+        const scoreLimit = limitEnabled ? Number(document.getElementById('online-limit').value) : null;
+        if (![base, taiValue].every(value => Number.isSafeInteger(value) && value >= 0 && value <= 1000000)
+            || base + taiValue === 0) return setStatus('底分與每台點數請填入有效整數，且至少一項大於 0。', 'warning');
+        if (limitEnabled && (!Number.isSafeInteger(scoreLimit) || scoreLimit < 1 || scoreLimit > 1000000000)) {
+            return setStatus('輸分上限請填入 1 到 10 億的整數。', 'warning');
+        }
         setBusy(true);
         try {
             for (let attempt = 0; attempt < 5; attempt++) {
@@ -176,6 +224,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             base,
                             taiValue,
                             dealerWind: '東',
+                            phase: 'waiting',
+                            scoreLimit,
+                            endReason: null,
+                            startedAt: null,
+                            endedAt: null,
                             members: [{ uid: currentUser.uid, wind: '東', name, score: 0 }],
                             history: [],
                             revision: 0,
@@ -184,7 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                     });
                     openRoom(code);
-                    setStatus('房間已建立，將房號分享給另外三位玩家。');
+                    setStatus('房間已建立，等另外三位玩家加入。');
                     return;
                 } catch (error) {
                     if (error.message !== 'ROOM_EXISTS') throw error;
@@ -201,6 +254,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const name = userName(document.getElementById('online-join-name'));
         if (!/^[A-HJ-NP-Z2-9]{6}$/.test(code)) return setStatus('請輸入六位房號。', 'warning');
         if (!name) return setStatus('請先輸入你的稱呼。', 'warning');
+        await joinRoomByCode(code, name);
+    }
+    async function joinRoomByCode(code, name) {
+        if (!currentUser || !database || busy) return;
         setBusy(true);
         try {
             const reference = roomRef(code);
@@ -209,6 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!snapshot.exists) throw new Error('找不到這個房號。');
                 const data = snapshot.data();
                 if (data.members.some(member => member.uid === currentUser.uid)) return;
+                if (phaseOf(data) !== 'waiting') throw new Error('這桌已經開始，無法再加入。');
                 const availableWind = core.WINDS.find(wind => !data.members.some(member => member.wind === wind));
                 if (!availableWind) throw new Error('房間已滿。');
                 transaction.update(reference, {
@@ -223,6 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { setBusy(false); }
     }
     function openRoom(code) {
+        document.getElementById('nav-counter').click();
         stopListening();
         currentCode = code;
         currentRoom = null;
@@ -230,9 +289,13 @@ document.addEventListener('DOMContentLoaded', () => {
         historyPanel.replaceChildren();
         rememberCode(code);
         roomCodeLabel.textContent = code;
+        document.getElementById('online-waiting-code').textContent = code;
         authPanel.hidden = true;
         lobby.hidden = true;
-        roomPanel.hidden = false;
+        waitingPanel.hidden = false;
+        roomPanel.hidden = true;
+        finishedPanel.hidden = true;
+        setSessionLocked(true);
         connectionLabel.textContent = '連線中';
         updateActions();
         listenToRoom(code);
@@ -246,8 +309,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentCode = null;
                 currentRoom = null;
                 rememberCode(null);
+                if (hashCode() === code) history.replaceState(null, '', location.pathname + location.search);
                 showLobby();
-                setStatus('房間不存在或已結束。', 'warning');
+                setStatus('房間已解散。', 'warning');
                 return;
             }
             const data = snapshot.data();
@@ -266,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
             connectionLabel.classList.toggle('is-offline', !serverFresh);
             if (!serverFresh) setStatus('暫時離線。牌局資料仍保留；恢復網路後會自動取得最新點數。', 'warning');
             else setStatus('');
-            renderRoom();
+            renderSession();
         }, error => {
             unsubscribeRoom = null;
             serverFresh = false;
@@ -284,9 +348,103 @@ document.addEventListener('DOMContentLoaded', () => {
     function formatScore(value) {
         return value > 0 ? `+${value}` : String(value);
     }
+    function renderQr(code) {
+        if (renderedQrCode === code) return;
+        renderedQrCode = code;
+        const target = document.getElementById('online-qr');
+        target.replaceChildren();
+        if (typeof qrcode !== 'function') {
+            target.textContent = 'QR Code 暫時無法顯示，請複製邀請連結。';
+            return;
+        }
+        try {
+            const qr = qrcode(0, 'M');
+            qr.addData(joinUrl(code));
+            qr.make();
+            target.innerHTML = qr.createSvgTag({ cellSize: 5, margin: 8, scalable: true });
+        } catch (_) {
+            target.textContent = 'QR Code 暫時無法顯示，請複製邀請連結。';
+        }
+    }
+    function renderWaiting() {
+        const members = currentRoom.members;
+        document.getElementById('online-waiting-count').textContent = `${members.length} / 4 位玩家`;
+        document.getElementById('online-waiting-stake').textContent = `底 ${currentRoom.base} · 每台 ${currentRoom.taiValue} · ${currentRoom.scoreLimit ? `輸分上限 ${currentRoom.scoreLimit}` : '無輸分上限'}`;
+        const seats = document.getElementById('online-waiting-seats');
+        seats.replaceChildren();
+        core.WINDS.forEach(wind => {
+            const member = members.find(item => item.wind === wind);
+            const item = document.createElement('div');
+            item.className = `online-waiting-seat${member ? ' is-filled' : ''}`;
+            const label = document.createElement('span');
+            label.textContent = wind;
+            const name = document.createElement('strong');
+            name.textContent = member ? member.name : '等待加入';
+            item.append(label, name);
+            seats.appendChild(item);
+        });
+        renderQr(currentCode);
+        updateActions();
+    }
+    function renderFinished() {
+        const reason = currentRoom.endReason === 'limit'
+            ? `有人已達輸分上限 ${currentRoom.scoreLimit} 點，牌局自動結束。`
+            : '玩家已結束這場對局。';
+        document.getElementById('online-finish-reason').textContent = reason;
+        const scores = document.getElementById('online-final-scores');
+        scores.replaceChildren();
+        currentRoom.members.slice().sort((a, b) => b.score - a.score).forEach(member => {
+            const row = document.createElement('div');
+            const name = document.createElement('span');
+            name.textContent = `${member.wind} · ${member.name}`;
+            const value = document.createElement('strong');
+            value.textContent = formatScore(member.score);
+            value.className = member.score >= 0 ? 'positive' : 'negative';
+            row.append(name, value);
+            scores.appendChild(row);
+        });
+        const payments = document.getElementById('online-payments');
+        payments.replaceChildren();
+        const transfers = core.settle(currentRoom);
+        if (!transfers.length) {
+            const empty = document.createElement('p');
+            empty.textContent = '四家點數相同，無須轉點。';
+            payments.appendChild(empty);
+        } else {
+            transfers.forEach(transfer => {
+                const row = document.createElement('div');
+                row.textContent = `${transfer.from} → ${transfer.to}`;
+                const amount = document.createElement('strong');
+                amount.textContent = `${transfer.amount} 點`;
+                row.appendChild(amount);
+                payments.appendChild(row);
+            });
+        }
+        updateActions();
+    }
+    function renderSession() {
+        if (!currentRoom || !currentUser) return;
+        const phase = phaseOf(currentRoom);
+        waitingPanel.hidden = phase !== 'waiting';
+        roomPanel.hidden = phase !== 'playing';
+        finishedPanel.hidden = phase !== 'finished';
+        setSessionLocked(true);
+        if (phase === 'waiting') renderWaiting();
+        else if (phase === 'playing') renderRoom();
+        else renderFinished();
+        if (phase !== 'playing') {
+            closeActionModal(true);
+            closeOthersModal();
+            closeCalculatorModal();
+            releaseWakeLock();
+        }
+    }
     function animateScore(element, target) {
+        if (element.scoreTarget === target && element.scoreFrame) return;
         const startValue = Number(element.textContent) || 0;
         if (element.scoreFrame) cancelAnimationFrame(element.scoreFrame);
+        element.scoreTarget = target;
+        element.scoreFrame = null;
         element.classList.toggle('positive', target > 0);
         element.classList.toggle('negative', target < 0);
         const reduced = document.documentElement.dataset.motion === 'off'
@@ -313,7 +471,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!currentRoom || !currentUser) return;
         const me = currentRoom.members.find(member => member.uid === currentUser.uid);
         if (!me) return;
-        document.getElementById('online-my-seat').textContent = `${me.wind}位 · ${me.name}　底 ${currentRoom.base}／台 ${currentRoom.taiValue}`;
+        document.getElementById('online-my-seat').textContent = `${me.wind}位 · ${me.name}`;
+        const myScore = document.getElementById('online-my-score');
+        myScore.classList.toggle('is-long', String(Math.abs(me.score)).length >= 5);
+        animateScore(myScore, me.score);
+        document.getElementById('online-game-meta').textContent = `第 ${(currentRoom.history?.length || 0) + 1} 局 · 底 ${currentRoom.base} / 台 ${currentRoom.taiValue}${currentRoom.scoreLimit ? ` · 輸分上限 ${currentRoom.scoreLimit}` : ''}`;
         dealerSelect.value = currentRoom.dealerWind;
         dealerSelect.disabled = currentRoom.ownerUid !== currentUser.uid || !serverFresh || busy;
         core.WINDS.forEach(wind => {
@@ -372,20 +534,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     function updateActions() {
         const me = currentRoom?.members?.find(member => member.uid === currentUser?.uid);
-        const canScore = !!me && currentRoom.members.length === 4 && serverFresh && !busy;
+        const phase = currentRoom ? phaseOf(currentRoom) : '';
+        const canScore = !!me && phase === 'playing' && currentRoom.members.length === 4 && serverFresh && !busy;
         document.getElementById('online-hu-btn').disabled = !canScore;
         document.getElementById('online-zimo-btn').disabled = !canScore;
         document.getElementById('online-undo-btn').disabled = !canScore
             || currentRoom.ownerUid !== currentUser.uid || !currentRoom.history?.length;
-        dealerSelect.disabled = !me || currentRoom.ownerUid !== currentUser.uid || !serverFresh || busy;
+        dealerSelect.disabled = !me || phase !== 'playing' || currentRoom.ownerUid !== currentUser.uid || !serverFresh || busy;
+        document.getElementById('online-start-btn').disabled = !me || phase !== 'waiting'
+            || currentRoom.ownerUid !== currentUser.uid || currentRoom.members.length !== 4 || !serverFresh || busy;
+        document.getElementById('online-start-btn').hidden = !me || currentRoom.ownerUid !== currentUser.uid;
+        document.getElementById('online-end-btn').disabled = !canScore;
+        ['online-waiting-exit-btn', 'online-game-exit-btn', 'online-finished-exit-btn'].forEach(id => {
+            document.getElementById(id).disabled = !me || !serverFresh || busy;
+        });
     }
     function closeActionModal(force = false) {
         if (busy && !force) return;
         actionModal.style.display = 'none';
         actionBody.replaceChildren();
     }
+    function closeOthersModal() {
+        othersModal.style.display = 'none';
+    }
+    function closeCalculatorModal() {
+        calculatorModal.style.display = 'none';
+        if (calculatorLayout.parentElement !== calculatorHome) {
+            calculatorHome.insertBefore(calculatorLayout, calculatorNext);
+        }
+    }
+    function openCalculatorModal() {
+        if (!currentRoom || phaseOf(currentRoom) !== 'playing') return;
+        document.getElementById('online-calculator-body').appendChild(calculatorLayout);
+        calculatorModal.style.display = 'block';
+    }
     function openActionModal(kind) {
-        if (!currentRoom || !serverFresh || currentRoom.members.length !== 4 || busy) return;
+        if (!currentRoom || phaseOf(currentRoom) !== 'playing' || !serverFresh || currentRoom.members.length !== 4 || busy) return;
         const me = currentRoom.members.find(member => member.uid === currentUser?.uid);
         if (!me) return;
         actionBody.replaceChildren();
@@ -449,6 +633,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const snapshot = await transaction.get(reference);
                     if (!snapshot.exists) throw new Error('房間已不存在。');
                     const data = snapshot.data();
+                    if (phaseOf(data) !== 'playing') throw new Error('對局已結束，請查看結算。');
                     if (data.history.some(item => item.id === operationId)) return;
                     const result = core.applyRound(data, {
                         id: operationId,
@@ -459,7 +644,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         at: Date.now()
                     });
                     transaction.update(reference, {
-                        ...result,
+                        members: result.members,
+                        history: result.history,
+                        ...(result.reachedLimit ? {
+                            phase: 'finished', endReason: 'limit',
+                            endedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        } : {}),
                         revision: (data.revision || 0) + 1,
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
@@ -473,7 +663,7 @@ document.addEventListener('DOMContentLoaded', () => {
         taiInput.focus();
     }
     async function updateDealer() {
-        if (!currentRoom || !currentUser || !serverFresh || busy) return;
+        if (!currentRoom || phaseOf(currentRoom) !== 'playing' || !currentUser || !serverFresh || busy) return;
         const dealerWind = dealerSelect.value;
         setBusy(true);
         try {
@@ -495,7 +685,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally { setBusy(false); }
     }
     async function undoRound() {
-        if (!currentRoom || !currentUser || !serverFresh || busy) return;
+        if (!currentRoom || phaseOf(currentRoom) !== 'playing' || !currentUser || !serverFresh || busy) return;
         const lastId = currentRoom.history?.at(-1)?.id;
         setBusy(true);
         try {
@@ -512,6 +702,77 @@ document.addEventListener('DOMContentLoaded', () => {
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
             });
+        } catch (error) { setStatus(message(error), 'error'); }
+        finally { setBusy(false); }
+    }
+    async function startOnlineGame() {
+        if (!currentRoom || !serverFresh || busy) return;
+        setBusy(true);
+        try {
+            const reference = roomRef(currentCode);
+            await database.runTransaction(async transaction => {
+                const snapshot = await transaction.get(reference);
+                if (!snapshot.exists) throw new Error('房間已解散。');
+                const data = snapshot.data();
+                if (data.ownerUid !== currentUser.uid) throw new Error('只有房主可以開始對局。');
+                if (phaseOf(data) !== 'waiting' || data.members.length !== 4) throw new Error('請等四位玩家都入座。');
+                transaction.update(reference, {
+                    phase: 'playing',
+                    startedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    revision: (data.revision || 0) + 1,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            });
+        } catch (error) { setStatus(message(error), 'error'); }
+        finally { setBusy(false); }
+    }
+    async function endOnlineGame() {
+        if (!currentRoom || phaseOf(currentRoom) !== 'playing' || !serverFresh || busy) return;
+        setBusy(true);
+        try {
+            const reference = roomRef(currentCode);
+            await database.runTransaction(async transaction => {
+                const snapshot = await transaction.get(reference);
+                if (!snapshot.exists) throw new Error('房間已解散。');
+                const data = snapshot.data();
+                if (phaseOf(data) !== 'playing' || !data.members.some(member => member.uid === currentUser.uid)) {
+                    throw new Error('目前無法結束這場對局。');
+                }
+                transaction.update(reference, {
+                    phase: 'finished', endReason: 'manual',
+                    endedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    revision: (data.revision || 0) + 1,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            });
+            closeOthersModal();
+            closeCalculatorModal();
+        } catch (error) { setStatus(message(error), 'error'); }
+        finally { setBusy(false); }
+    }
+    async function exitOnlineRoom() {
+        if (!currentCode || !currentUser || !serverFresh || busy) return;
+        const code = currentCode;
+        setBusy(true);
+        try {
+            const reference = roomRef(code);
+            await database.runTransaction(async transaction => {
+                const snapshot = await transaction.get(reference);
+                if (!snapshot.exists) return;
+                if (!snapshot.data().members.some(member => member.uid === currentUser.uid)) {
+                    throw new Error('你不是這桌的玩家。');
+                }
+                transaction.delete(reference);
+            });
+            if (currentCode === code) {
+                stopListening();
+                currentCode = null;
+                currentRoom = null;
+                rememberCode(null);
+                if (hashCode() === code) history.replaceState(null, '', location.pathname + location.search);
+                showLobby();
+                setStatus('房間已解散，所有玩家都已離開。');
+            }
         } catch (error) { setStatus(message(error), 'error'); }
         finally { setBusy(false); }
     }
@@ -562,8 +823,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentCode = null;
                 currentRoom = null;
                 rememberCode(null);
+                if (hashCode() === code) history.replaceState(null, '', location.pathname + location.search);
                 showLobby();
-                setStatus('房間不存在或已結束。', 'warning');
+                setStatus('房間已解散。', 'warning');
                 return;
             }
             const data = snapshot.data();
@@ -581,7 +843,7 @@ document.addEventListener('DOMContentLoaded', () => {
             connectionLabel.textContent = '已同步';
             connectionLabel.classList.remove('is-offline');
             setStatus('');
-            renderRoom();
+            renderSession();
         }).catch(error => {
             if (code !== currentCode) return;
             serverFresh = false;
@@ -606,29 +868,49 @@ document.addEventListener('DOMContentLoaded', () => {
         const code = storedCode();
         if (code) openRoom(code);
     });
-    document.getElementById('online-back-btn').addEventListener('click', () => {
-        stopListening();
-        releaseWakeLock();
-        currentRoom = null;
-        currentCode = null;
-        showLobby();
-        setStatus('座位仍保留；需要時可輸入房號或按「返回上一桌」。');
+    document.getElementById('online-limit-enabled').addEventListener('change', event => {
+        const enabled = event.target.checked;
+        document.getElementById('online-limit-field').hidden = !enabled;
+        document.getElementById('online-limit').required = enabled;
     });
     document.getElementById('online-copy-btn').addEventListener('click', async () => {
         try {
-            await navigator.clipboard.writeText(currentCode);
-            setStatus('房號已複製，請朋友在同一個網站加入。');
-        } catch (_) { setStatus('請手動複製畫面上的房號。', 'warning'); }
+            await navigator.clipboard.writeText(joinUrl(currentCode));
+            setStatus('邀請連結已複製，可直接傳給朋友。');
+        } catch (_) { setStatus('無法複製，請讓朋友掃描 QR Code 或輸入房號。', 'warning'); }
+    });
+    document.getElementById('online-start-btn').addEventListener('click', startOnlineGame);
+    document.getElementById('online-end-btn').addEventListener('click', endOnlineGame);
+    ['online-waiting-exit-btn', 'online-game-exit-btn', 'online-finished-exit-btn'].forEach(id => {
+        document.getElementById(id).addEventListener('click', exitOnlineRoom);
     });
     document.getElementById('online-hu-btn').addEventListener('click', () => openActionModal('hu'));
     document.getElementById('online-zimo-btn').addEventListener('click', () => openActionModal('zimo'));
+    document.getElementById('online-others-btn').addEventListener('click', () => {
+        if (!currentRoom || phaseOf(currentRoom) !== 'playing') return;
+        othersModal.style.display = 'block';
+    });
+    document.getElementById('online-calculator-btn').addEventListener('click', openCalculatorModal);
+    document.getElementById('online-others-close').addEventListener('click', closeOthersModal);
+    document.getElementById('online-calculator-close').addEventListener('click', closeCalculatorModal);
+    othersModal.addEventListener('click', event => { if (event.target === othersModal) closeOthersModal(); });
+    calculatorModal.addEventListener('click', event => { if (event.target === calculatorModal) closeCalculatorModal(); });
     document.getElementById('online-undo-btn').addEventListener('click', undoRound);
     dealerSelect.addEventListener('change', updateDealer);
     document.getElementById('online-action-close').addEventListener('click', () => closeActionModal());
     actionModal.addEventListener('click', event => { if (event.target === actionModal) closeActionModal(); });
     document.addEventListener('keydown', event => {
         if (event.key === 'Escape' && actionModal.style.display === 'block') closeActionModal();
+        else if (event.key === 'Escape' && othersModal.style.display === 'block') closeOthersModal();
+        else if (event.key === 'Escape' && calculatorModal.style.display === 'block') closeCalculatorModal();
     });
+    document.addEventListener('click', event => {
+        if (!currentCode) return;
+        if (event.target.closest('.site-header nav, .header-actions, .score-mode-switch')) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+        }
+    }, true);
     wakeButton.addEventListener('click', async () => {
         if (wantsWakeLock) releaseWakeLock();
         else { wantsWakeLock = true; await acquireWakeLock(); }
@@ -658,6 +940,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 stopListening();
                 currentRoom = null;
                 currentCode = null;
+                setSessionLocked(false);
+                closeOthersModal();
+                closeCalculatorModal();
                 releaseWakeLock();
             } else {
                 const defaultName = user.displayName || user.email?.split('@')[0] || '';

@@ -19,6 +19,17 @@ service cloud.firestore {
         return name is string && name.size() > 0 && name.size() <= 20;
       }
 
+      function phaseOf(data) {
+        return data.get('phase', data.history.size() > 0 ? 'playing' : 'waiting');
+      }
+
+      function sameLifecycle() {
+        return request.resource.data.get('phase', null) == resource.data.get('phase', null)
+          && request.resource.data.get('endReason', null) == resource.data.get('endReason', null)
+          && request.resource.data.get('startedAt', null) == resource.data.get('startedAt', null)
+          && request.resource.data.get('endedAt', null) == resource.data.get('endedAt', null);
+      }
+
       function isMember(members) {
         return (members.size() > 0 && members[0].uid == request.auth.uid)
           || (members.size() > 1 && members[1].uid == request.auth.uid)
@@ -29,12 +40,14 @@ service cloud.firestore {
       function fixedRoomFields() {
         return request.resource.data.keys().hasOnly([
             'version', 'ownerUid', 'base', 'taiValue', 'dealerWind',
-            'members', 'history', 'revision', 'createdAt', 'updatedAt'
+            'members', 'history', 'revision', 'createdAt', 'updatedAt',
+            'phase', 'scoreLimit', 'endReason', 'startedAt', 'endedAt'
           ])
           && request.resource.data.version == resource.data.version
           && request.resource.data.ownerUid == resource.data.ownerUid
           && request.resource.data.base == resource.data.base
           && request.resource.data.taiValue == resource.data.taiValue
+          && request.resource.data.get('scoreLimit', null) == resource.data.get('scoreLimit', null)
           && request.resource.data.createdAt == resource.data.createdAt
           && request.resource.data.revision == resource.data.revision + 1
           && request.resource.data.updatedAt == request.time;
@@ -53,6 +66,7 @@ service cloud.firestore {
         let count = resource.data.members.size();
         let next = request.resource.data.members;
         return count >= 1 && count < 4
+          && phaseOf(resource.data) == 'waiting' && sameLifecycle()
           && next.size() == count + 1
           && next[0:count] == resource.data.members
           && validNewMember(next[count], count)
@@ -74,6 +88,7 @@ service cloud.firestore {
 
       function validDealerChange() {
         return request.auth.uid == resource.data.ownerUid
+          && phaseOf(resource.data) == 'playing' && sameLifecycle()
           && request.resource.data.members == resource.data.members
           && request.resource.data.history == resource.data.history
           && request.resource.data.dealerWind in ['東', '南', '西', '北'];
@@ -106,6 +121,7 @@ service cloud.firestore {
         let after = request.resource.data;
         let count = before.history.size();
         return isMember(before.members) && sameSeats()
+          && phaseOf(before) == 'playing' && validScoreLifecycle()
           && after.dealerWind == before.dealerWind
           && count < 500 && after.history.size() == count + 1
           && after.history[0:count] == before.history
@@ -117,25 +133,78 @@ service cloud.firestore {
         let after = request.resource.data;
         let count = before.history.size();
         return request.auth.uid == before.ownerUid && sameSeats()
+          && phaseOf(before) == 'playing' && sameLifecycle()
           && after.dealerWind == before.dealerWind
           && count > 0 && after.history == before.history[0:count - 1]
           && [after.members[0].score, after.members[1].score,
               after.members[2].score, after.members[3].score] == before.history[count - 1].beforeScores;
       }
 
+      function reachedLimit(data) {
+        let limit = data.get('scoreLimit', null);
+        return limit is int && limit > 0
+          && (data.members[0].score <= -limit || data.members[1].score <= -limit
+            || data.members[2].score <= -limit || data.members[3].score <= -limit);
+      }
+
+      function validScoreLifecycle() {
+        let after = request.resource.data;
+        return after.get('startedAt', null) == resource.data.get('startedAt', null)
+          && (reachedLimit(after)
+            ? after.phase == 'finished' && after.endReason == 'limit' && after.endedAt == request.time
+            : phaseOf(after) == 'playing'
+              && after.get('endReason', null) == resource.data.get('endReason', null)
+              && after.get('endedAt', null) == resource.data.get('endedAt', null));
+      }
+
+      function validStart() {
+        return request.auth.uid == resource.data.ownerUid
+          && phaseOf(resource.data) == 'waiting'
+          && resource.data.members.size() == 4
+          && request.resource.data.phase == 'playing'
+          && request.resource.data.startedAt == request.time
+          && request.resource.data.get('endReason', null) == resource.data.get('endReason', null)
+          && request.resource.data.get('endedAt', null) == resource.data.get('endedAt', null)
+          && request.resource.data.members == resource.data.members
+          && request.resource.data.history == resource.data.history
+          && request.resource.data.dealerWind == resource.data.dealerWind;
+      }
+
+      function validManualEnd() {
+        return isMember(resource.data.members)
+          && phaseOf(resource.data) == 'playing'
+          && request.resource.data.phase == 'finished'
+          && request.resource.data.endReason == 'manual'
+          && request.resource.data.endedAt == request.time
+          && request.resource.data.get('startedAt', null) == resource.data.get('startedAt', null)
+          && request.resource.data.members == resource.data.members
+          && request.resource.data.history == resource.data.history
+          && request.resource.data.dealerWind == resource.data.dealerWind;
+      }
+
       allow get: if signedIn();
-      allow list, delete: if false;
+      allow list: if false;
+      allow delete: if signedIn() && isMember(resource.data.members);
       allow create: if signedIn()
         && roomId.matches('[A-HJ-NP-Z2-9]{6}')
         && request.resource.data.keys().hasOnly([
           'version', 'ownerUid', 'base', 'taiValue', 'dealerWind',
-          'members', 'history', 'revision', 'createdAt', 'updatedAt'
+          'members', 'history', 'revision', 'createdAt', 'updatedAt',
+          'phase', 'scoreLimit', 'endReason', 'startedAt', 'endedAt'
         ])
         && request.resource.data.version == 1
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.base is int && request.resource.data.base >= 0
         && request.resource.data.taiValue is int && request.resource.data.taiValue >= 0
         && request.resource.data.dealerWind == '東'
+        && request.resource.data.phase == 'waiting'
+        && (request.resource.data.scoreLimit == null
+          || (request.resource.data.scoreLimit is int
+            && request.resource.data.scoreLimit >= 1
+            && request.resource.data.scoreLimit <= 1000000000))
+        && request.resource.data.endReason == null
+        && request.resource.data.startedAt == null
+        && request.resource.data.endedAt == null
         && request.resource.data.members.size() == 1
         && request.resource.data.members[0].keys().hasOnly(['uid', 'wind', 'name', 'score'])
         && request.resource.data.members[0].keys().hasAll(['uid', 'wind', 'name', 'score'])
@@ -148,7 +217,8 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time
         && request.resource.data.updatedAt == request.time;
       allow update: if signedIn() && fixedRoomFields()
-        && (validJoin() || validDealerChange() || validScore() || validUndo());
+        && (validJoin() || validDealerChange() || validScore()
+          || validUndo() || validStart() || validManualEnd());
     }
   }
 }
