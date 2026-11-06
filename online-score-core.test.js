@@ -2,9 +2,9 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { applyRound, undoLast, settle } = require('./online-score-core');
 
-function room(dealerWind = '東') {
+function room() {
     return {
-        ownerUid: 'east', base: 5, taiValue: 2, dealerWind,
+        ownerUid: 'east', base: 5, taiValue: 2, dealerWind: '東',
         members: [
             { uid: 'east', wind: '東', name: '東', score: 0 },
             { uid: 'south', wind: '南', name: '南', score: 0 },
@@ -25,14 +25,18 @@ test('胡牌只由放槍者支付，點數總和維持零', () => {
     assert.deepEqual(initial.members.map(player => player.score), [0, 0, 0, 0]);
 });
 
-test('莊家自摸時三家各加付一台', () => {
+test('自摸由另外三家平均支付，不計莊家加成', () => {
     const result = applyRound(room(), { id: 'round-1', kind: 'zimo', winnerUid: 'east', tai: 2 });
-    assert.deepEqual(result.members.map(player => player.score), [33, -11, -11, -11]);
+    assert.deepEqual(result.members.map(player => player.score), [27, -9, -9, -9]);
 });
 
-test('閒家自摸時莊家額外支付一台', () => {
+test('任何座位自摸都使用同一種算法', () => {
     const result = applyRound(room(), { id: 'round-1', kind: 'zimo', winnerUid: 'west', tai: 2 });
-    assert.deepEqual(result.members.map(player => player.score), [-11, -9, 29, -9]);
+    assert.deepEqual(result.members.map(player => player.score), [-9, -9, 27, -9]);
+    const withoutDealer = room();
+    delete withoutDealer.dealerWind;
+    const sameResult = applyRound(withoutDealer, { id: 'round-1', kind: 'zimo', winnerUid: 'west', tai: 2 });
+    assert.deepEqual(sameResult.members.map(player => player.score), result.members.map(player => player.score));
 });
 
 test('房主可以復原最後一局，其餘玩家不可', () => {
@@ -80,7 +84,7 @@ test('未達上限時繼續，且多家輸贏可拆分結算', () => {
     });
     assert.equal(result.reachedLimit, false);
     assert.deepEqual(settle({ ...initial, members: result.members }), [
-        { from: '東位 東', to: '西位 西', amount: 11 },
+        { from: '東位 東', to: '西位 西', amount: 9 },
         { from: '南位 南', to: '西位 西', amount: 9 },
         { from: '北位 北', to: '西位 西', amount: 9 }
     ]);

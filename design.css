@@ -208,12 +208,13 @@ input:focus, select:focus { outline: none; border-color: #59675b; box-shadow: 0 
 .online-room-settings select { min-height: 34px; padding: 5px 10px; border-color: #647063; background: #323a32; color: #eef2e8; }
 .online-room-settings select:disabled { opacity: .6; }
 .online-players { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; padding: 0 28px 26px; }
-.online-player-card { display: flex; flex-direction: column; min-height: 190px; min-width: 0; padding: 18px; border: 1px solid rgba(255,255,255,.1); border-radius: 10px; background: #292e29; animation: board-enter .45s var(--ease) both; }
+.online-player-card { display: flex; flex-direction: column; min-height: 190px; min-width: 0; padding: 18px; border: 1px solid rgba(255,255,255,.1); border-radius: 10px; background: #292e29; color: #f5f8f1; animation: board-enter .45s var(--ease) both; }
 .online-player-card.is-me { border-color: #8da76f; }
 .online-player-card.is-empty { opacity: .48; }
 .online-player-head { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .online-wind { display: grid; place-items: center; flex: none; width: 29px; height: 29px; border: 1px solid rgba(255,255,255,.24); border-radius: 5px; font-size: 12px; }
-.online-player-name { overflow: hidden; font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.online-player-name { overflow: hidden; color: #f5f8f1; font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.online-player-card.is-me .online-player-name { color: #d7eb9e; }
 .online-score-label { margin-top: auto; color: #98a497; font-size: 11px; }
 .online-score { color: #f5f8f1; font-size: clamp(36px,4vw,61px); font-weight: 650; line-height: 1.2; letter-spacing: -.065em; font-variant-numeric: tabular-nums; }
 .online-score.positive { color: #d7eb9e; }

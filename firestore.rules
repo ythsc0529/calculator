@@ -43,6 +43,7 @@ service cloud.firestore {
             'members', 'history', 'revision', 'createdAt', 'updatedAt',
             'phase', 'scoreLimit', 'endReason', 'startedAt', 'endedAt'
           ])
+          && request.resource.data.keys().hasAll(resource.data.keys())
           && request.resource.data.version == resource.data.version
           && request.resource.data.ownerUid == resource.data.ownerUid
           && request.resource.data.base == resource.data.base
@@ -86,23 +87,47 @@ service cloud.firestore {
           && after[2].score is int && after[3].score is int;
       }
 
-      function validDealerChange() {
-        return request.auth.uid == resource.data.ownerUid
-          && phaseOf(resource.data) == 'playing' && sameLifecycle()
-          && request.resource.data.members == resource.data.members
-          && request.resource.data.history == resource.data.history
-          && request.resource.data.dealerWind in ['東', '南', '西', '北'];
+      function memberIndex(members, uid) {
+        return members[0].uid == uid ? 0
+          : members[1].uid == uid ? 1
+          : members[2].uid == uid ? 2
+          : members[3].uid == uid ? 3 : -1;
+      }
+
+      function expectedPayment(before, entry) {
+        return before.base + entry.tai * before.taiValue;
+      }
+
+      function validPayerDelta(before, entry, index, winnerIndex, loserIndex) {
+        return index == winnerIndex
+          || (entry.kind == 'hu'
+            ? entry.deltas[index] == (index == loserIndex ? -(before.base + entry.tai * before.taiValue) : 0)
+            : entry.deltas[index] == -expectedPayment(before, entry));
       }
 
       function validScoreEntry(entry, before, after, count) {
-        return entry.keys().hasAll([
+        let winnerIndex = memberIndex(before.members, entry.winnerUid);
+        let loserIndex = entry.kind == 'hu' ? memberIndex(before.members, entry.loserUid) : -1;
+        return entry.keys().hasOnly([
             'id', 'sequence', 'kind', 'winnerUid', 'winnerName', 'loserUid',
             'loserName', 'tai', 'beforeScores', 'deltas', 'at'
           ])
+          && entry.keys().hasAll([
+            'id', 'sequence', 'kind', 'winnerUid', 'winnerName', 'loserUid',
+            'loserName', 'tai', 'beforeScores', 'deltas', 'at'
+          ])
+          && entry.id is string && entry.id.size() > 0 && entry.id.size() <= 100
+          && entry.at is int
           && entry.winnerUid == request.auth.uid
           && entry.sequence == count + 1
           && entry.kind in ['hu', 'zimo']
           && entry.tai is int && entry.tai >= 0 && entry.tai <= 99
+          && winnerIndex >= 0
+          && entry.winnerName == before.members[winnerIndex].name
+          && (entry.kind == 'hu'
+            ? loserIndex >= 0 && loserIndex != winnerIndex
+              && entry.loserName == before.members[loserIndex].name
+            : entry.loserUid == null && entry.loserName == null)
           && entry.beforeScores == [
             before.members[0].score, before.members[1].score,
             before.members[2].score, before.members[3].score
@@ -113,6 +138,10 @@ service cloud.firestore {
             after.members[2].score - before.members[2].score,
             after.members[3].score - before.members[3].score
           ]
+          && validPayerDelta(before, entry, 0, winnerIndex, loserIndex)
+          && validPayerDelta(before, entry, 1, winnerIndex, loserIndex)
+          && validPayerDelta(before, entry, 2, winnerIndex, loserIndex)
+          && validPayerDelta(before, entry, 3, winnerIndex, loserIndex)
           && entry.deltas[0] + entry.deltas[1] + entry.deltas[2] + entry.deltas[3] == 0;
       }
 
@@ -124,7 +153,7 @@ service cloud.firestore {
           && phaseOf(before) == 'playing' && validScoreLifecycle()
           && after.dealerWind == before.dealerWind
           && count < 500 && after.history.size() == count + 1
-          && after.history[0:count] == before.history
+          && after.history == before.history.concat([after.history[count]])
           && validScoreEntry(after.history[count], before, after, count);
       }
 
@@ -135,7 +164,7 @@ service cloud.firestore {
         return request.auth.uid == before.ownerUid && sameSeats()
           && phaseOf(before) == 'playing' && sameLifecycle()
           && after.dealerWind == before.dealerWind
-          && count > 0 && after.history == before.history[0:count - 1]
+          && count > 0 && before.history == after.history.concat([before.history[count - 1]])
           && [after.members[0].score, after.members[1].score,
               after.members[2].score, after.members[3].score] == before.history[count - 1].beforeScores;
       }
@@ -217,7 +246,7 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time
         && request.resource.data.updatedAt == request.time;
       allow update: if signedIn() && fixedRoomFields()
-        && (validJoin() || validDealerChange() || validScore()
+        && (validJoin() || validScore()
           || validUndo() || validStart() || validManualEnd());
     }
   }

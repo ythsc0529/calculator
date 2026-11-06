@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const roomCodeInput = document.getElementById('online-room-code-input');
     const roomCodeLabel = document.getElementById('online-room-code');
     const playersGrid = document.getElementById('online-players');
-    const dealerSelect = document.getElementById('online-dealer');
     const connectionLabel = document.getElementById('online-connection');
     const historyPanel = document.getElementById('online-history');
     const actionModal = document.getElementById('online-action-modal');
@@ -70,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     function message(error) {
         if (error?.code === 'permission-denied' || error?.code === 403 || /\b403\b/.test(error?.message || '')) {
-            return '連線計分權限遭拒（403）。請在 Firebase 控制台發布最新的 firestore.rules。';
+            return '資料庫拒絕更新（403）。請確認已發布最新的 firestore.rules，並重新整理頁面。';
         }
         if (error?.code === 'unavailable') return '目前無法連線，恢復網路後請重試。';
         if (error?.code === 'unauthenticated') return '登入已失效，請重新登入。';
@@ -476,8 +475,6 @@ document.addEventListener('DOMContentLoaded', () => {
         myScore.classList.toggle('is-long', String(Math.abs(me.score)).length >= 5);
         animateScore(myScore, me.score);
         document.getElementById('online-game-meta').textContent = `第 ${(currentRoom.history?.length || 0) + 1} 局 · 底 ${currentRoom.base} / 台 ${currentRoom.taiValue}${currentRoom.scoreLimit ? ` · 輸分上限 ${currentRoom.scoreLimit}` : ''}`;
-        dealerSelect.value = currentRoom.dealerWind;
-        dealerSelect.disabled = currentRoom.ownerUid !== currentUser.uid || !serverFresh || busy;
         core.WINDS.forEach(wind => {
             let card = playersGrid.querySelector(`[data-wind="${wind}"]`);
             if (!card) {
@@ -540,7 +537,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('online-zimo-btn').disabled = !canScore;
         document.getElementById('online-undo-btn').disabled = !canScore
             || currentRoom.ownerUid !== currentUser.uid || !currentRoom.history?.length;
-        dealerSelect.disabled = !me || phase !== 'playing' || currentRoom.ownerUid !== currentUser.uid || !serverFresh || busy;
         document.getElementById('online-start-btn').disabled = !me || phase !== 'waiting'
             || currentRoom.ownerUid !== currentUser.uid || currentRoom.members.length !== 4 || !serverFresh || busy;
         document.getElementById('online-start-btn').hidden = !me || currentRoom.ownerUid !== currentUser.uid;
@@ -577,7 +573,7 @@ document.addEventListener('DOMContentLoaded', () => {
         heading.id = 'online-action-title';
         heading.textContent = kind === 'hu' ? '我胡牌' : '我自摸';
         const detail = document.createElement('p');
-        detail.textContent = `贏家：${me.wind}位 ${me.name}　莊家：${currentRoom.dealerWind}位`;
+        detail.textContent = `贏家：${me.wind}位 ${me.name}`;
         const form = document.createElement('form');
         form.className = 'online-action-form';
         if (kind === 'hu') {
@@ -661,28 +657,6 @@ document.addEventListener('DOMContentLoaded', () => {
         actionBody.append(heading, detail, form);
         actionModal.style.display = 'block';
         taiInput.focus();
-    }
-    async function updateDealer() {
-        if (!currentRoom || phaseOf(currentRoom) !== 'playing' || !currentUser || !serverFresh || busy) return;
-        const dealerWind = dealerSelect.value;
-        setBusy(true);
-        try {
-            const reference = roomRef(currentCode);
-            await database.runTransaction(async transaction => {
-                const snapshot = await transaction.get(reference);
-                if (!snapshot.exists) throw new Error('房間已不存在。');
-                const data = snapshot.data();
-                if (data.ownerUid !== currentUser.uid) throw new Error('只有房主可以更換莊家。');
-                transaction.update(reference, {
-                    dealerWind,
-                    revision: (data.revision || 0) + 1,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            });
-        } catch (error) {
-            dealerSelect.value = currentRoom.dealerWind;
-            setStatus(message(error), 'error');
-        } finally { setBusy(false); }
     }
     async function undoRound() {
         if (!currentRoom || phaseOf(currentRoom) !== 'playing' || !currentUser || !serverFresh || busy) return;
@@ -896,7 +870,6 @@ document.addEventListener('DOMContentLoaded', () => {
     othersModal.addEventListener('click', event => { if (event.target === othersModal) closeOthersModal(); });
     calculatorModal.addEventListener('click', event => { if (event.target === calculatorModal) closeCalculatorModal(); });
     document.getElementById('online-undo-btn').addEventListener('click', undoRound);
-    dealerSelect.addEventListener('change', updateDealer);
     document.getElementById('online-action-close').addEventListener('click', () => closeActionModal());
     actionModal.addEventListener('click', event => { if (event.target === actionModal) closeActionModal(); });
     document.addEventListener('keydown', event => {

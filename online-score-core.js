@@ -16,8 +16,7 @@
         if (room.scoreLimit != null && (!Number.isSafeInteger(room.scoreLimit) || room.scoreLimit <= 0)) {
             throw new Error('牌局輸分上限無效。');
         }
-        if (!WINDS.includes(room.dealerWind)
-            || new Set(room.members.map(member => member.uid)).size !== room.members.length
+        if (new Set(room.members.map(member => member.uid)).size !== room.members.length
             || new Set(room.members.map(member => member.wind)).size !== room.members.length
             || room.members.some(member => !member.uid || !WINDS.includes(member.wind) || !Number.isFinite(member.score))) {
             throw new Error('牌局玩家資料無效，請重新進入房間。');
@@ -48,11 +47,9 @@
             deltas[winnerIndex] += payment;
             deltas[loserIndex] -= payment;
         } else {
-            const dealerBonus = winner.wind === room.dealerWind ? 1 : 0;
             room.members.forEach((member, index) => {
                 if (index === winnerIndex) return;
-                const payment = room.base + (tai + dealerBonus) * room.taiValue
-                    + (member.wind === room.dealerWind ? room.taiValue : 0);
+                const payment = room.base + tai * room.taiValue;
                 deltas[index] -= payment;
                 deltas[winnerIndex] += payment;
             });
