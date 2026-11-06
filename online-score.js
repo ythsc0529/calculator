@@ -50,7 +50,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return match ? match[1].toUpperCase() : null;
     }
     function message(error) {
-        if (error?.code === 'permission-denied') return '資料庫尚未開放連線計分權限，請設定 Firestore 規則。';
+        if (error?.code === 'permission-denied' || error?.code === 403 || /\b403\b/.test(error?.message || '')) {
+            return '連線計分的資料庫權限尚未開放（403）。請發布包含 scoreRooms 的 Firestore 規則。';
+        }
         if (error?.code === 'unavailable') return '目前無法連線，恢復網路後請重試。';
         if (error?.code === 'unauthenticated') return '登入已失效，請重新登入。';
         if (error?.code === 'auth/unauthorized-domain') return '目前網站網址尚未加入 Firebase 授權網域。';

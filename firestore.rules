@@ -1,0 +1,154 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /userStates/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    match /tables/{tableId} {
+      allow read: if true;
+      allow update, delete, create: if request.auth != null;
+    }
+
+    match /scoreRooms/{roomId} {
+      function signedIn() {
+        return request.auth != null;
+      }
+
+      function validName(name) {
+        return name is string && name.size() > 0 && name.size() <= 20;
+      }
+
+      function isMember(members) {
+        return (members.size() > 0 && members[0].uid == request.auth.uid)
+          || (members.size() > 1 && members[1].uid == request.auth.uid)
+          || (members.size() > 2 && members[2].uid == request.auth.uid)
+          || (members.size() > 3 && members[3].uid == request.auth.uid);
+      }
+
+      function fixedRoomFields() {
+        return request.resource.data.keys().hasOnly([
+            'version', 'ownerUid', 'base', 'taiValue', 'dealerWind',
+            'members', 'history', 'revision', 'createdAt', 'updatedAt'
+          ])
+          && request.resource.data.version == resource.data.version
+          && request.resource.data.ownerUid == resource.data.ownerUid
+          && request.resource.data.base == resource.data.base
+          && request.resource.data.taiValue == resource.data.taiValue
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.revision == resource.data.revision + 1
+          && request.resource.data.updatedAt == request.time;
+      }
+
+      function validNewMember(member, count) {
+        return member.keys().hasOnly(['uid', 'wind', 'name', 'score'])
+          && member.keys().hasAll(['uid', 'wind', 'name', 'score'])
+          && member.uid == request.auth.uid
+          && member.wind == ['東', '南', '西', '北'][count]
+          && validName(member.name)
+          && member.score == 0;
+      }
+
+      function validJoin() {
+        let count = resource.data.members.size();
+        let next = request.resource.data.members;
+        return count >= 1 && count < 4
+          && next.size() == count + 1
+          && next[0:count] == resource.data.members
+          && validNewMember(next[count], count)
+          && request.resource.data.history == resource.data.history
+          && request.resource.data.dealerWind == resource.data.dealerWind;
+      }
+
+      function sameSeats() {
+        let before = resource.data.members;
+        let after = request.resource.data.members;
+        return before.size() == 4 && after.size() == 4
+          && before[0].uid == after[0].uid && before[0].wind == after[0].wind && before[0].name == after[0].name
+          && before[1].uid == after[1].uid && before[1].wind == after[1].wind && before[1].name == after[1].name
+          && before[2].uid == after[2].uid && before[2].wind == after[2].wind && before[2].name == after[2].name
+          && before[3].uid == after[3].uid && before[3].wind == after[3].wind && before[3].name == after[3].name
+          && after[0].score is int && after[1].score is int
+          && after[2].score is int && after[3].score is int;
+      }
+
+      function validDealerChange() {
+        return request.auth.uid == resource.data.ownerUid
+          && request.resource.data.members == resource.data.members
+          && request.resource.data.history == resource.data.history
+          && request.resource.data.dealerWind in ['東', '南', '西', '北'];
+      }
+
+      function validScoreEntry(entry, before, after, count) {
+        return entry.keys().hasAll([
+            'id', 'sequence', 'kind', 'winnerUid', 'winnerName', 'loserUid',
+            'loserName', 'tai', 'beforeScores', 'deltas', 'at'
+          ])
+          && entry.winnerUid == request.auth.uid
+          && entry.sequence == count + 1
+          && entry.kind in ['hu', 'zimo']
+          && entry.tai is int && entry.tai >= 0 && entry.tai <= 99
+          && entry.beforeScores == [
+            before.members[0].score, before.members[1].score,
+            before.members[2].score, before.members[3].score
+          ]
+          && entry.deltas == [
+            after.members[0].score - before.members[0].score,
+            after.members[1].score - before.members[1].score,
+            after.members[2].score - before.members[2].score,
+            after.members[3].score - before.members[3].score
+          ]
+          && entry.deltas[0] + entry.deltas[1] + entry.deltas[2] + entry.deltas[3] == 0;
+      }
+
+      function validScore() {
+        let before = resource.data;
+        let after = request.resource.data;
+        let count = before.history.size();
+        return isMember(before.members) && sameSeats()
+          && after.dealerWind == before.dealerWind
+          && count < 500 && after.history.size() == count + 1
+          && after.history[0:count] == before.history
+          && validScoreEntry(after.history[count], before, after, count);
+      }
+
+      function validUndo() {
+        let before = resource.data;
+        let after = request.resource.data;
+        let count = before.history.size();
+        return request.auth.uid == before.ownerUid && sameSeats()
+          && after.dealerWind == before.dealerWind
+          && count > 0 && after.history == before.history[0:count - 1]
+          && [after.members[0].score, after.members[1].score,
+              after.members[2].score, after.members[3].score] == before.history[count - 1].beforeScores;
+      }
+
+      allow get: if signedIn();
+      allow list, delete: if false;
+      allow create: if signedIn()
+        && roomId.matches('[A-HJ-NP-Z2-9]{6}')
+        && request.resource.data.keys().hasOnly([
+          'version', 'ownerUid', 'base', 'taiValue', 'dealerWind',
+          'members', 'history', 'revision', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.version == 1
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.base is int && request.resource.data.base >= 0
+        && request.resource.data.taiValue is int && request.resource.data.taiValue >= 0
+        && request.resource.data.dealerWind == '東'
+        && request.resource.data.members.size() == 1
+        && request.resource.data.members[0].keys().hasOnly(['uid', 'wind', 'name', 'score'])
+        && request.resource.data.members[0].keys().hasAll(['uid', 'wind', 'name', 'score'])
+        && request.resource.data.members[0].uid == request.auth.uid
+        && request.resource.data.members[0].wind == '東'
+        && validName(request.resource.data.members[0].name)
+        && request.resource.data.members[0].score == 0
+        && request.resource.data.history == []
+        && request.resource.data.revision == 0
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if signedIn() && fixedRoomFields()
+        && (validJoin() || validDealerChange() || validScore() || validUndo());
+    }
+  }
+}
